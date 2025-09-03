@@ -1,12 +1,15 @@
 import express from 'express';
 import { PrismaClient } from '@prisma/client';
-import { authMiddleware, AuthenticatedRequest } from '../middleware/auth';
+import { authenticateToken, authMiddleware, AuthenticatedRequest } from '../middleware/auth';
+import { checkTrialStatus, requireActiveTrial } from '../middleware/trial';
 
 const router = express.Router();
 const prisma = new PrismaClient();
 
-// Aplicar middleware de autenticação em todas as rotas
+// Aplicar autenticação e verificação de trial a todas as rotas
 router.use(authMiddleware);
+router.use(checkTrialStatus);
+
 
 // GET /api/clientes - Listar clientes (filtrado por empresa)
 router.get('/', authMiddleware, async (req: AuthenticatedRequest, res) => {
@@ -38,7 +41,7 @@ router.get('/', authMiddleware, async (req: AuthenticatedRequest, res) => {
 });
 
 // POST /api/clientes - Criar cliente (com empresa do usuário)
-router.post('/', authMiddleware, async (req: AuthenticatedRequest, res) => {
+router.post('/', requireActiveTrial, async (req: AuthenticatedRequest, res) => {
   try {
     const cliente = await prisma.cliente.create({
       data: {
@@ -83,8 +86,8 @@ router.get('/:id', async (req: AuthenticatedRequest, res) => {
   }
 });
 
-// Atualizar cliente
-router.put('/:id', async (req: AuthenticatedRequest, res) => {
+// Atualizar cliente (requer trial ativo)
+router.put('/:id', requireActiveTrial, async (req: AuthenticatedRequest, res) => {
   try {
     const { id } = req.params;
     const updates = req.body;
@@ -113,8 +116,8 @@ router.put('/:id', async (req: AuthenticatedRequest, res) => {
   }
 });
 
-// Deletar cliente
-router.delete('/:id', async (req: AuthenticatedRequest, res) => {
+// Deletar cliente (requer trial ativo)
+router.delete('/:id', requireActiveTrial, async (req: AuthenticatedRequest, res) => {
   try {
     const { id } = req.params;
 

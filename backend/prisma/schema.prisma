@@ -16,6 +16,10 @@ model Usuario {
   email     String   @unique
   senha     String
   empresaId String?
+  plano     String   @default("TRIAL") // TRIAL, PREMIUM, EXPIRADO
+  trialStart DateTime @default(now())
+  trialEnd   DateTime?
+  isActive   Boolean  @default(true)
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 

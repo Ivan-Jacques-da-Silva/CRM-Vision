@@ -122,8 +122,10 @@ export const KanbanBoard: React.FC = () => {
   const aoTerminarArrasto = async (result: DropResult) => {
     const { destination, source, draggableId } = result;
 
+    // Se não há destino, cancela
     if (!destination) return;
 
+    // Se não houve mudança de posição, cancela
     if (destination.droppableId === source.droppableId && destination.index === source.index) {
       return;
     }
@@ -133,10 +135,7 @@ export const KanbanBoard: React.FC = () => {
       const oportunidadeArrastada = oportunidades[source.droppableId].find(op => op.id === draggableId);
       if (!oportunidadeArrastada) return;
 
-      // Atualizar no backend
-      await atualizarOportunidade(draggableId, { estagio: destination.droppableId });
-
-      // Atualizar estado local
+      // Feedback visual imediato - atualizar estado local primeiro
       const novasOportunidades = { ...oportunidades };
       
       // Remover da origem
@@ -144,23 +143,34 @@ export const KanbanBoard: React.FC = () => {
         oportunidade => oportunidade.id !== draggableId
       );
 
-      // Adicionar no destino
+      // Adicionar no destino na posição correta
       const oportunidadeAtualizada = { ...oportunidadeArrastada, estagio: destination.droppableId };
       const destinationItems = [...novasOportunidades[destination.droppableId]];
       destinationItems.splice(destination.index, 0, oportunidadeAtualizada);
       novasOportunidades[destination.droppableId] = destinationItems;
 
+      // Atualizar estado imediatamente para feedback visual
       setOportunidades(novasOportunidades);
 
+      // Então atualizar no backend
+      await atualizarOportunidade(draggableId, { estagio: destination.droppableId });
+
+      // Toast de sucesso
+      const etapaDestino = etapasComerciais.find(e => e.id === destination.droppableId);
       toast({
-        title: "Sucesso",
-        description: "Oportunidade movida com sucesso",
+        title: "Oportunidade movida",
+        description: `Movida para "${etapaDestino?.nome}" com sucesso`,
       });
+
     } catch (error) {
       console.error('Erro ao mover oportunidade:', error);
+      
+      // Em caso de erro, reverter estado local
+      carregarDados();
+      
       toast({
         title: "Erro",
-        description: "Erro ao mover oportunidade",
+        description: "Erro ao mover oportunidade. Tente novamente.",
         variant: "destructive",
       });
     }
@@ -251,7 +261,9 @@ export const KanbanBoard: React.FC = () => {
                       ref={provided.innerRef}
                       {...provided.droppableProps}
                       className={`w-72 transition-all duration-200 ${
-                        snapshot.isDraggingOver ? 'bg-accent/20 rounded-lg' : ''
+                        snapshot.isDraggingOver 
+                          ? 'bg-primary/5 rounded-lg ring-2 ring-primary/20 transform scale-102' 
+                          : ''
                       }`}
                     >
                       <div className="glass-card rounded-lg p-3 mb-4">
@@ -260,11 +272,26 @@ export const KanbanBoard: React.FC = () => {
                             <div className={`p-2 rounded-lg ${etapa.cor} bg-opacity-10`}>
                               <IconeEtapa className={`h-4 w-4 ${etapa.cor.replace('bg-', 'text-')}`} />
                             </div>
-                            <h3 className="font-medium text-foreground text-sm">{etapa.nome}</h3>
+                            <div>
+                              <h3 className="font-medium text-foreground text-sm">{etapa.nome}</h3>
+                              <p className="text-xs text-muted-foreground">
+                                {items.reduce((total, item) => total + (item.valor || 0), 0).toLocaleString('pt-BR', {
+                                  style: 'currency',
+                                  currency: 'BRL',
+                                })}
+                              </p>
+                            </div>
                           </div>
-                          <Badge variant="secondary" className="text-xs">
-                            {items.length}
-                          </Badge>
+                          <div className="flex flex-col items-end gap-1">
+                            <Badge variant="secondary" className="text-xs">
+                              {items.length}
+                            </Badge>
+                            {items.length > 0 && (
+                              <div className="text-xs text-muted-foreground">
+                                Média: {Math.round(items.reduce((total, item) => total + (item.probabilidade || 0), 0) / items.length)}%
+                              </div>
+                            )}
+                          </div>
                         </div>
                       </div>
                       
@@ -280,11 +307,16 @@ export const KanbanBoard: React.FC = () => {
                                 ref={provided.innerRef}
                                 {...provided.draggableProps}
                                 {...provided.dragHandleProps}
-                                 className={`cursor-grab glass-card transition-all duration-300 ${
-                                   snapshot.isDragging ? 'shadow-xl opacity-90 rotate-2' : ''
+                                 className={`cursor-grab glass-card transition-all duration-200 hover:shadow-md ${
+                                   snapshot.isDragging 
+                                     ? 'shadow-2xl opacity-95 rotate-3 scale-105 ring-2 ring-primary/20' 
+                                     : 'hover:shadow-lg'
                                  }`}
                                 style={{
                                   ...provided.draggableProps.style,
+                                  transform: snapshot.isDragging 
+                                    ? `${provided.draggableProps.style?.transform} rotate(3deg)` 
+                                    : provided.draggableProps.style?.transform,
                                 }}
                               >
                                 <CardHeader className="pb-2">

@@ -1,11 +1,14 @@
 import express from 'express';
 import { PrismaClient } from '@prisma/client';
-import { authMiddleware, AuthenticatedRequest } from '../middleware/auth';
+import { authenticateToken } from '../middleware/auth';
+import { checkTrialStatus, requireActiveTrial } from '../middleware/trial';
 
 const router = express.Router();
 const prisma = new PrismaClient();
 
-router.use(authMiddleware);
+// Aplicar autenticação e verificação de trial a todas as rotas
+router.use(authenticateToken);
+router.use(checkTrialStatus);
 
 // GET /api/tarefas - Listar tarefas (filtrado por empresa)
 router.get('/', authMiddleware, async (req: AuthenticatedRequest, res) => {
@@ -42,8 +45,8 @@ router.get('/', authMiddleware, async (req: AuthenticatedRequest, res) => {
   }
 });
 
-// Criar tarefa
-router.post('/', async (req: AuthenticatedRequest, res) => {
+// Criar tarefa (requer trial ativo)
+router.post('/', requireActiveTrial, async (req: AuthenticatedRequest, res) => {
   try {
     const {
       titulo,
@@ -83,8 +86,8 @@ router.post('/', async (req: AuthenticatedRequest, res) => {
   }
 });
 
-// Atualizar tarefa
-router.put('/:id', async (req: AuthenticatedRequest, res) => {
+// Atualizar tarefa (requer trial ativo)
+router.put('/:id', requireActiveTrial, async (req: AuthenticatedRequest, res) => {
   try {
     const { id } = req.params;
     const updates = req.body;
@@ -116,8 +119,8 @@ router.put('/:id', async (req: AuthenticatedRequest, res) => {
   }
 });
 
-// Deletar tarefa
-router.delete('/:id', async (req: AuthenticatedRequest, res) => {
+// Deletar tarefa (requer trial ativo)
+router.delete('/:id', requireActiveTrial, async (req: AuthenticatedRequest, res) => {
   try {
     const { id } = req.params;
 

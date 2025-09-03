@@ -5,13 +5,19 @@
   "main": "dist/index.js",
   "scripts": {
     "setup": "node setup.js",
+    "setup:reset": "node setup.js --reset",
+    "setup:migrate": "node setup.js --migrate", 
+    "setup:seed": "node setup.js --seed",
     "dev": "nodemon src/index.ts",
+    "dev:reset": "node reset-dev.js && npm run dev",
     "build": "tsc",
     "start": "node dist/index.js",
     "db:migrate": "prisma migrate dev",
     "db:generate": "prisma generate",
     "db:reset": "prisma migrate reset",
-    "db:studio": "prisma studio"
+    "db:studio": "prisma studio",
+    "db:push": "prisma db push",
+    "postinstall": "prisma generate"
   },
   "dependencies": {
     "express": "^4.21.2",

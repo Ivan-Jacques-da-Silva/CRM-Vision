@@ -36,19 +36,28 @@ router.post('/register', async (req, res) => {
       });
     }
 
+    // Calcular data de fim do trial (7 dias)
+    const trialEnd = new Date();
+    trialEnd.setDate(trialEnd.getDate() + 7);
+
     // Criar usuário
     const usuario = await prisma.usuario.create({
       data: {
         nome,
         email,
         senha: hashedPassword,
-        empresaId: empresa?.id
+        empresaId: empresa?.id,
+        plano: 'TRIAL',
+        trialEnd: trialEnd,
+        isActive: true
       },
       select: {
         id: true,
         nome: true,
         email: true,
-        empresaId: true
+        empresaId: true,
+        plano: true,
+        trialEnd: true
       }
     });
 
@@ -95,13 +104,23 @@ router.post('/login', async (req, res) => {
     const jwtSecret = process.env.JWT_SECRET || 'fallback-secret';
     const token = jwt.sign({ userId: usuario.id }, jwtSecret, { expiresIn: '7d' });
 
+    // Verificar status do trial
+    const now = new Date();
+    const trialEnd = usuario.trialEnd || new Date(usuario.trialStart.getTime() + 7 * 24 * 60 * 60 * 1000);
+    const isTrialExpired = usuario.plano === 'TRIAL' && now > trialEnd;
+    const diasRestantes = Math.max(0, Math.ceil((trialEnd.getTime() - now.getTime()) / (1000 * 60 * 60 * 24)));
+
     res.json({
       message: 'Login realizado com sucesso',
       usuario: {
         id: usuario.id,
         nome: usuario.nome,
         email: usuario.email,
-        empresaId: usuario.empresaId
+        empresaId: usuario.empresaId,
+        plano: isTrialExpired ? 'EXPIRADO' : usuario.plano,
+        trialEnd: trialEnd,
+        diasRestantes,
+        isTrialExpired
       },
       token
     });

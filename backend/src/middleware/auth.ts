@@ -12,25 +12,39 @@ export interface AuthenticatedRequest extends Request {
 export const authMiddleware = async (req: AuthenticatedRequest, res: Response, next: NextFunction) => {
   try {
     const token = req.header('Authorization')?.replace('Bearer ', '');
-    
+
     if (!token) {
       return res.status(401).json({ message: 'Token de acesso requerido' });
     }
 
     const jwtSecret = process.env.JWT_SECRET || 'fallback-secret';
     const decoded = jwt.verify(token, jwtSecret) as { userId: string };
-    
-    const user = await prisma.usuario.findUnique({
+
+    // Buscar usuário
+    const usuario = await prisma.usuario.findUnique({
       where: { id: decoded.userId },
-      select: { id: true, nome: true, email: true, empresaId: true }
+      select: { id: true, nome: true, email: true, empresaId: true, plano: true, trialStart: true }
     });
 
-    if (!user) {
-      return res.status(401).json({ message: 'Usuário não encontrado' });
+    if (!usuario) {
+      return res.status(401).json({ message: 'Token inválido' });
     }
 
-    req.userId = user.id;
-    req.user = user;
+    // Calcular se o trial expirou
+    const now = new Date();
+    // Se trialEnd não estiver definido, calcula com base em trialStart
+    const trialEnd = usuario.trialEnd || (usuario.trialStart ? new Date(usuario.trialStart.getTime() + 7 * 24 * 60 * 60 * 1000) : new Date());
+    const isTrialExpired = usuario.plano === 'TRIAL' && now > trialEnd;
+
+    // Adicionar usuário ao request
+    req.user = {
+      id: usuario.id,
+      nome: usuario.nome,
+      email: usuario.email,
+      empresaId: usuario.empresaId,
+      plano: isTrialExpired ? 'EXPIRADO' : usuario.plano,
+      isTrialExpired
+    };
     next();
   } catch (error) {
     console.error('Erro na autenticação:', error);

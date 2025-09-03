@@ -102,7 +102,7 @@ export const Home: React.FC = () => {
             </Button>
           </div>
           <div className="mt-8 text-sm text-muted-foreground">
-            ✨ Teste grátis por 14 dias • Sem cartão de crédito
+            ✨ Teste grátis por 7 dias • Sem cartão de crédito
           </div>
         </div>
       </section>
