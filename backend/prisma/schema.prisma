@@ -1,0 +1,108 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model Usuario {
+  id        String   @id @default(cuid())
+  nome      String
+  email     String   @unique
+  senha     String
+  empresaId String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  empresa   Empresa? @relation(fields: [empresaId], references: [id])
+  clientes  Cliente[]
+  tarefas   Tarefa[]
+  oportunidades Oportunidade[]
+
+  @@map("usuarios")
+}
+
+model Empresa {
+  id        String   @id @default(cuid())
+  nome      String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  usuarios      Usuario[]
+  clientes      Cliente[]
+  oportunidades Oportunidade[]
+
+  @@map("empresas")
+}
+
+model Cliente {
+  id           String   @id @default(cuid())
+  nome         String
+  email        String
+  telefone     String?
+  nomeEmpresa  String?
+  cargo        String?
+  endereco     String?
+  observacoes  String?
+  status       String   @default("ATIVO")
+  fonte        String?
+  tags         String[]
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+  usuarioId    String
+  empresaId    String?
+
+  usuario      Usuario @relation(fields: [usuarioId], references: [id])
+  empresa      Empresa? @relation(fields: [empresaId], references: [id])
+  oportunidades Oportunidade[]
+  tarefas      Tarefa[]
+
+  @@map("clientes")
+}
+
+model Oportunidade {
+  id           String   @id @default(cuid())
+  titulo       String
+  descricao    String?
+  valor        Float?
+  status       String   @default("LEAD")
+  prioridade   String   @default("MEDIA")
+  dataPrevisao DateTime?
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+  clienteId    String
+  usuarioId    String
+  empresaId    String?
+
+  cliente      Cliente @relation(fields: [clienteId], references: [id])
+  usuario      Usuario @relation(fields: [usuarioId], references: [id])
+  empresa      Empresa? @relation(fields: [empresaId], references: [id])
+  tarefas      Tarefa[]
+
+  @@map("oportunidades")
+}
+
+model Tarefa {
+  id               String   @id @default(cuid())
+  titulo           String
+  descricao        String?
+  status           String   @default("PENDENTE")
+  prioridade       String   @default("MEDIA")
+  dataVencimento   DateTime
+  clienteId        String?
+  oportunidadeId   String?
+  usuarioId        String
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+
+  cliente          Cliente? @relation(fields: [clienteId], references: [id])
+  oportunidade     Oportunidade? @relation(fields: [oportunidadeId], references: [id])
+  usuario          Usuario @relation(fields: [usuarioId], references: [id])
+
+  @@map("tarefas")
+}
