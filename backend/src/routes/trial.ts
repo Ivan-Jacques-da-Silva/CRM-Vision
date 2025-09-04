@@ -1,17 +1,17 @@
 
 import express from 'express';
 import { PrismaClient } from '@prisma/client';
-import { authenticateToken } from '../middleware/auth';
+import { authMiddleware, AuthenticatedRequest } from '../middleware/auth';
 import { checkTrialStatus } from '../middleware/trial';
 
 const router = express.Router();
 const prisma = new PrismaClient();
 
 // Verificar status do trial
-router.get('/status', authenticateToken, checkTrialStatus, async (req, res) => {
+router.get('/status', authMiddleware, checkTrialStatus, async (req: AuthenticatedRequest, res) => {
   try {
     const usuario = await prisma.usuario.findUnique({
-      where: { id: req.user!.id },
+      where: { id: req.userId! },
       select: {
         id: true,
         nome: true,
@@ -47,10 +47,10 @@ router.get('/status', authenticateToken, checkTrialStatus, async (req, res) => {
 });
 
 // Simular upgrade para premium (para testes)
-router.post('/upgrade', authenticateToken, async (req, res) => {
+router.post('/upgrade', authMiddleware, async (req: AuthenticatedRequest, res) => {
   try {
     const usuario = await prisma.usuario.update({
-      where: { id: req.user!.id },
+      where: { id: req.userId! },
       data: {
         plano: 'PREMIUM',
         isActive: true

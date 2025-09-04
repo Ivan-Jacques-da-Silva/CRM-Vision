@@ -1,6 +1,6 @@
 import express from 'express';
 import { PrismaClient } from '@prisma/client';
-import { authenticateToken, authMiddleware, AuthenticatedRequest } from '../middleware/auth';
+import { authMiddleware, AuthenticatedRequest } from '../middleware/auth';
 import { checkTrialStatus, requireActiveTrial } from '../middleware/trial';
 
 const router = express.Router();
@@ -10,9 +10,8 @@ const prisma = new PrismaClient();
 router.use(authMiddleware);
 router.use(checkTrialStatus);
 
-
 // GET /api/clientes - Listar clientes (filtrado por empresa)
-router.get('/', authMiddleware, async (req: AuthenticatedRequest, res) => {
+router.get('/', async (req: AuthenticatedRequest, res) => {
   try {
     const whereClause: any = {
       usuarioId: req.userId!

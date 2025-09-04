@@ -9,7 +9,7 @@ import trialRoutes from './routes/trial';
 
 const app = express();
 const prisma = new PrismaClient();
-const PORT = process.env.PORT || 3001;
+const PORT = parseInt(process.env.PORT || '5000', 10);
 
 // Middleware
 app.use(cors());
@@ -54,7 +54,7 @@ async function startServer() {
     await prisma.$connect();
     console.log('✅ Conectado ao banco de dados');
     
-    app.listen(PORT, () => {
+    app.listen(PORT, '0.0.0.0', () => {
       console.log(`🚀 Servidor rodando na porta ${PORT}`);
       console.log(`📊 Health check: http://localhost:${PORT}/api/health`);
     });

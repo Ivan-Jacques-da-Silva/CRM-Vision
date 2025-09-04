@@ -6,7 +6,7 @@
   "scripts": {
     "setup": "node setup.js",
     "setup:reset": "node setup.js --reset",
-    "setup:migrate": "node setup.js --migrate", 
+    "setup:migrate": "node setup.js --migrate",
     "setup:seed": "node setup.js --seed",
     "dev": "nodemon src/index.ts",
     "dev:reset": "node reset-dev.js && npm run dev",
@@ -20,21 +20,21 @@
     "postinstall": "prisma generate"
   },
   "dependencies": {
-    "express": "^4.21.2",
-    "cors": "^2.8.5",
+    "@prisma/client": "^6.15.0",
     "bcryptjs": "^3.0.2",
-    "jsonwebtoken": "^9.0.2",
-    "@prisma/client": "^6.15.0"
+    "cors": "^2.8.5",
+    "express": "^4.21.2",
+    "jsonwebtoken": "^9.0.2"
   },
   "devDependencies": {
-    "@types/express": "^4.17.21",
-    "@types/cors": "^2.8.19",
     "@types/bcryptjs": "^2.4.6",
+    "@types/cors": "^2.8.19",
+    "@types/express": "^4.17.21",
     "@types/jsonwebtoken": "^9.0.10",
-    "@types/node": "^22.10.1",
+    "@types/node": "^22.18.0",
     "nodemon": "^3.1.10",
     "prisma": "^6.15.0",
     "ts-node": "^10.9.2",
-    "typescript": "^5.7.2"
+    "typescript": "^5.9.2"
   }
 }

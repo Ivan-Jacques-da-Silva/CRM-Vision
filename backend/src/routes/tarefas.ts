@@ -1,41 +1,41 @@
-import express from 'express';
-import { PrismaClient } from '@prisma/client';
-import { authenticateToken } from '../middleware/auth';
+import express, { Response } from 'express';
+import { PrismaClient, Prisma } from '@prisma/client';
+import { authMiddleware, AuthenticatedRequest } from '../middleware/auth';
 import { checkTrialStatus, requireActiveTrial } from '../middleware/trial';
 
 const router = express.Router();
 const prisma = new PrismaClient();
 
-// Aplicar autenticação e verificação de trial a todas as rotas
-router.use(authenticateToken);
+// Autenticação + trial
+router.use(authMiddleware);
 router.use(checkTrialStatus);
 
-// GET /api/tarefas - Listar tarefas (filtrado por empresa)
-router.get('/', authMiddleware, async (req: AuthenticatedRequest, res) => {
+// GET /api/tarefas
+router.get('/', async (req: AuthenticatedRequest, res: Response) => {
   try {
-    // Buscar apenas tarefas de clientes da mesma empresa
-    const whereClause: any = {
-      usuarioId: req.userId!
+    const whereClause: Prisma.TarefaWhereInput = {
+      usuarioId: req.userId!,
+      ...(req.user?.empresaId && {
+        OR: [
+          { cliente: { empresaId: req.user.empresaId } },
+          { cliente: null },
+        ],
+      }),
     };
-
-    if (req.user?.empresaId) {
-      whereClause.OR = [
-        { cliente: { empresaId: req.user.empresaId } },
-        { cliente: null } // Tarefas sem cliente específico
-      ];
-    }
 
     const tarefas = await prisma.tarefa.findMany({
       where: whereClause,
       include: {
-        cliente: { 
-          select: { nome: true, empresaId: true },
-          include: { empresa: { select: { nome: true } } }
+        // use apenas include (sem select no mesmo nível)
+        cliente: {
+          include: {
+            empresa: { select: { nome: true } },
+          },
         },
         oportunidade: { select: { titulo: true } },
-        usuario: { select: { nome: true } }
+        usuario: { select: { nome: true } },
       },
-      orderBy: { dataVencimento: 'asc' }
+      orderBy: { dataVencimento: 'asc' },
     });
 
     res.json(tarefas);
@@ -45,8 +45,8 @@ router.get('/', authMiddleware, async (req: AuthenticatedRequest, res) => {
   }
 });
 
-// Criar tarefa (requer trial ativo)
-router.post('/', requireActiveTrial, async (req: AuthenticatedRequest, res) => {
+// POST /api/tarefas
+router.post('/', requireActiveTrial, async (req: AuthenticatedRequest, res: Response) => {
   try {
     const {
       titulo,
@@ -55,7 +55,7 @@ router.post('/', requireActiveTrial, async (req: AuthenticatedRequest, res) => {
       prioridade,
       dataVencimento,
       clienteId,
-      oportunidadeId
+      oportunidadeId,
     } = req.body;
 
     if (!titulo || !dataVencimento) {
@@ -66,17 +66,21 @@ router.post('/', requireActiveTrial, async (req: AuthenticatedRequest, res) => {
       data: {
         titulo,
         descricao,
-        status: status || 'PENDENTE',
-        prioridade: prioridade || 'MEDIA',
+        status: status ?? 'PENDENTE',
+        prioridade: prioridade ?? 'MEDIA',
         dataVencimento: new Date(dataVencimento),
-        clienteId,
-        oportunidadeId,
-        usuarioId: req.userId!
+        clienteId: clienteId ?? null,
+        oportunidadeId: oportunidadeId ?? null,
+        usuarioId: req.userId!,
       },
       include: {
-        cliente: true,
-        oportunidade: true
-      }
+        cliente: {
+          include: {
+            empresa: { select: { nome: true } },
+          },
+        },
+        oportunidade: { select: { titulo: true } },
+      },
     });
 
     res.status(201).json({ tarefa });
@@ -86,30 +90,52 @@ router.post('/', requireActiveTrial, async (req: AuthenticatedRequest, res) => {
   }
 });
 
-// Atualizar tarefa (requer trial ativo)
-router.put('/:id', requireActiveTrial, async (req: AuthenticatedRequest, res) => {
+// PUT /api/tarefas/:id
+router.put('/:id', requireActiveTrial, async (req: AuthenticatedRequest, res: Response) => {
   try {
     const { id } = req.params;
-    const updates = req.body;
+
+    // Se o ID da sua tabela for Int, use Number(id)
+    const filtroId = { id }; // ou { id: Number(id) }
 
     const tarefa = await prisma.tarefa.findFirst({
-      where: {
-        id,
-        usuarioId: req.userId!
-      }
+      where: { ...filtroId, usuarioId: req.userId! },
     });
 
     if (!tarefa) {
       return res.status(404).json({ message: 'Tarefa não encontrada' });
     }
 
+    // Permitir apenas campos seguros
+    const { titulo, descricao, status, prioridade, dataVencimento, clienteId, oportunidadeId } = req.body as {
+      titulo?: string;
+      descricao?: string;
+      status?: string;
+      prioridade?: string;
+      dataVencimento?: string | Date;
+      clienteId?: string | null;
+      oportunidadeId?: string | null;
+    };
+
     const tarefaAtualizada = await prisma.tarefa.update({
-      where: { id },
-      data: updates,
+      where: filtroId,
+      data: {
+        ...(titulo !== undefined && { titulo }),
+        ...(descricao !== undefined && { descricao }),
+        ...(status !== undefined && { status }),
+        ...(prioridade !== undefined && { prioridade }),
+        ...(dataVencimento !== undefined && { dataVencimento: new Date(dataVencimento) }),
+        ...(clienteId !== undefined && { clienteId }),
+        ...(oportunidadeId !== undefined && { oportunidadeId }),
+      },
       include: {
-        cliente: true,
-        oportunidade: true
-      }
+        cliente: {
+          include: {
+            empresa: { select: { nome: true } },
+          },
+        },
+        oportunidade: { select: { titulo: true } },
+      },
     });
 
     res.json({ tarefa: tarefaAtualizada });
@@ -119,25 +145,21 @@ router.put('/:id', requireActiveTrial, async (req: AuthenticatedRequest, res) =>
   }
 });
 
-// Deletar tarefa (requer trial ativo)
-router.delete('/:id', requireActiveTrial, async (req: AuthenticatedRequest, res) => {
+// DELETE /api/tarefas/:id
+router.delete('/:id', requireActiveTrial, async (req: AuthenticatedRequest, res: Response) => {
   try {
     const { id } = req.params;
+    const filtroId = { id }; // ou { id: Number(id) }
 
     const tarefa = await prisma.tarefa.findFirst({
-      where: {
-        id,
-        usuarioId: req.userId!
-      }
+      where: { ...filtroId, usuarioId: req.userId! },
     });
 
     if (!tarefa) {
       return res.status(404).json({ message: 'Tarefa não encontrada' });
     }
 
-    await prisma.tarefa.delete({
-      where: { id }
-    });
+    await prisma.tarefa.delete({ where: filtroId });
 
     res.json({ message: 'Tarefa deletada com sucesso' });
   } catch (error) {

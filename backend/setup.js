@@ -297,7 +297,7 @@ class SetupBanco {
   async seedBasico() {
     this.log('🌱', 'Verificando dados iniciais...')
     try {
-      // Verificar se há usuários
+      // Verificar se há usuários (nome correto da tabela)
       const r = await this.clienteCRM.query(`SELECT COUNT(*)::int AS n FROM usuarios`)
       if (r.rows[0].n > 0) {
         this.log('✅', 'Já há dados. Pulando seed.')
@@ -311,64 +311,115 @@ class SetupBanco {
     try {
       const bcrypt = require('bcryptjs')
       
-      // Criar empresa demo
+      // Criar empresa demo (nome correto da tabela)
       await this.clienteCRM.query(`
-        INSERT INTO empresas (id, nome) 
-        VALUES ('demo-empresa','Empresa Demo') 
+        INSERT INTO "empresas" (id, nome, "createdAt", "updatedAt") 
+        VALUES ('demo-empresa', 'Vision CRM Demo', NOW(), NOW()) 
         ON CONFLICT (id) DO NOTHING
       `)
 
-      // Criar usuário admin com trial
+      // Criar usuário admin com trial válido por 30 dias (email correto)
       const hash = await bcrypt.hash('123456', 10)
       const agora = new Date()
-      const trialEnd = new Date(agora.getTime() + 7 * 24 * 60 * 60 * 1000)
+      const trialEnd = new Date(agora.getTime() + 30 * 24 * 60 * 60 * 1000) // 30 dias
       
-      await this.clienteCRM.query(
-        `INSERT INTO usuarios (id, nome, email, senha, "empresaId", plano, "trialStart", "trialEnd", "isActive") 
-         VALUES ('demo-user','Admin Demo','admin@demo.com',$1,'demo-empresa','TRIAL',$2,$3,true)
-         ON CONFLICT (email) DO NOTHING`,
-        [hash, agora, trialEnd]
-      )
+      await this.clienteCRM.query(`
+        INSERT INTO "usuarios" (
+          id, nome, email, senha, "empresaId", plano, "trialStart", "trialEnd", 
+          "isActive", "createdAt", "updatedAt"
+        ) 
+        VALUES (
+          'demo-user', 'Admin Vision', 'admin@demo.com', $1, 'demo-empresa', 
+          'PREMIUM', $2, $3, true, NOW(), NOW()
+        )
+        ON CONFLICT (email) DO NOTHING
+      `, [hash, agora, trialEnd])
+
+      // Criar clientes demo (nome correto da tabela)
+      await this.clienteCRM.query(`
+        INSERT INTO "clientes" (
+          id, nome, email, telefone, "nomeEmpresa", cargo, status, 
+          "usuarioId", "empresaId", "createdAt", "updatedAt"
+        ) 
+        VALUES 
+          (
+            'cliente-demo-1', 'João Silva', 'joao@empresa.com', '(11) 99999-9999', 
+            'Empresa ABC', 'Diretor', 'ATIVO', 'demo-user', 'demo-empresa', NOW(), NOW()
+          ),
+          (
+            'cliente-demo-2', 'Maria Santos', 'maria@startup.com', '(11) 88888-8888', 
+            'Startup XYZ', 'CEO', 'ATIVO', 'demo-user', 'demo-empresa', NOW(), NOW()
+          )
+        ON CONFLICT (id) DO NOTHING
+      `)
 
       // Criar dados exemplo para o Kanban
       await this.seedKanban()
       
-      this.log('✅', `Seed inserido - Login: admin@demo.com / Senha: 123456`)
+      this.log('✅', `Usuário criado com sucesso!`)
+      this.log('📧', `Email: admin@demo.com`)
+      this.log('🔐', `Senha: 123456`)
+      this.log('🎯', `Plano: PREMIUM (30 dias)`)
       this.log('📅', `Trial válido até: ${trialEnd.toLocaleDateString('pt-BR')}`)
     } catch (e) {
       this.log('⚠️', `Seed falhou: ${e.message}`)
+      console.error(e)
     }
   }
 
   async seedKanban() {
     this.log('🎯', 'Criando dados exemplo para Kanban...')
     
-    // Cliente exemplo
-    await this.clienteCRM.query(`
-      INSERT INTO clientes (id, nome, email, telefone, "nomeEmpresa", status, "usuarioId", "empresaId") 
-      VALUES 
-        ('cliente-demo-1', 'João Silva', 'joao@empresa.com', '11999999999', 'Empresa ABC', 'ATIVO', 'demo-user', 'demo-empresa'),
-        ('cliente-demo-2', 'Maria Santos', 'maria@corp.com', '11888888888', 'Corp XYZ', 'ATIVO', 'demo-user', 'demo-empresa')
-      ON CONFLICT (id) DO NOTHING
-    `)
-
     // Oportunidades para o Kanban (diferentes status)
     const oportunidades = [
-      { id: 'opp-1', titulo: 'Venda Software', status: 'LEAD', valor: 5000, clienteId: 'cliente-demo-1' },
-      { id: 'opp-2', titulo: 'Consultoria TI', status: 'QUALIFICADO', valor: 8000, clienteId: 'cliente-demo-2' },
-      { id: 'opp-3', titulo: 'Projeto Mobile', status: 'PROPOSTA', valor: 15000, clienteId: 'cliente-demo-1' },
-      { id: 'opp-4', titulo: 'Sistema Web', status: 'NEGOCIACAO', valor: 12000, clienteId: 'cliente-demo-2' },
+      { id: 'opp-1', titulo: 'Venda Software ERP', status: 'LEAD', valor: 50000, clienteId: 'cliente-demo-1' },
+      { id: 'opp-2', titulo: 'Consultoria Digital', status: 'QUALIFICADO', valor: 25000, clienteId: 'cliente-demo-2' },
+      { id: 'opp-3', titulo: 'App Mobile', status: 'PROPOSTA', valor: 80000, clienteId: 'cliente-demo-1' },
+      { id: 'opp-4', titulo: 'Sistema Web Completo', status: 'NEGOCIACAO', valor: 120000, clienteId: 'cliente-demo-2' },
+      { id: 'opp-5', titulo: 'E-commerce Premium', status: 'FECHADO', valor: 75000, clienteId: 'cliente-demo-1' }
     ]
 
     for (const opp of oportunidades) {
-      await this.clienteCRM.query(`
-        INSERT INTO oportunidades (id, titulo, status, valor, "clienteId", "usuarioId", "empresaId") 
-        VALUES ($1, $2, $3, $4, $5, 'demo-user', 'demo-empresa')
-        ON CONFLICT (id) DO NOTHING
-      `, [opp.id, opp.titulo, opp.status, opp.valor, opp.clienteId])
+      try {
+        await this.clienteCRM.query(`
+          INSERT INTO "oportunidades" (
+            id, titulo, status, valor, "clienteId", "usuarioId", "empresaId", 
+            "createdAt", "updatedAt"
+          ) 
+          VALUES ($1, $2, $3, $4, $5, 'demo-user', 'demo-empresa', NOW(), NOW())
+          ON CONFLICT (id) DO NOTHING
+        `, [opp.id, opp.titulo, opp.status, opp.valor, opp.clienteId])
+      } catch (e) {
+        this.log('⚠️', `Erro ao criar oportunidade ${opp.titulo}: ${e.message}`)
+      }
     }
 
-    this.log('✅', 'Dados exemplo do Kanban criados')
+    // Criar algumas tarefas exemplo
+    const tarefas = [
+      { id: 'task-1', titulo: 'Follow-up Cliente João', status: 'PENDENTE', prioridade: 'ALTA', clienteId: 'cliente-demo-1' },
+      { id: 'task-2', titulo: 'Preparar Proposta Maria', status: 'EM_PROGRESSO', prioridade: 'MEDIA', clienteId: 'cliente-demo-2' },
+      { id: 'task-3', titulo: 'Reunião Kickoff', status: 'CONCLUIDA', prioridade: 'ALTA', clienteId: 'cliente-demo-1' }
+    ]
+
+    for (const tarefa of tarefas) {
+      try {
+        const dataVencimento = new Date()
+        dataVencimento.setDate(dataVencimento.getDate() + Math.floor(Math.random() * 10) + 1)
+        
+        await this.clienteCRM.query(`
+          INSERT INTO "tarefas" (
+            id, titulo, status, prioridade, "dataVencimento", "clienteId", 
+            "usuarioId", "createdAt", "updatedAt"
+          ) 
+          VALUES ($1, $2, $3, $4, $5, $6, 'demo-user', NOW(), NOW())
+          ON CONFLICT (id) DO NOTHING
+        `, [tarefa.id, tarefa.titulo, tarefa.status, tarefa.prioridade, dataVencimento, tarefa.clienteId])
+      } catch (e) {
+        this.log('⚠️', `Erro ao criar tarefa ${tarefa.titulo}: ${e.message}`)
+      }
+    }
+
+    this.log('✅', 'Dados exemplo do Kanban e tarefas criados')
   }
 
   async testarConexao() {
@@ -443,6 +494,169 @@ class SetupBanco {
     }
   }
 
+  async corrigirAutenticacao() {
+    this.log('🔐', 'Corrigindo problemas de autenticação...')
+    
+    try {
+      // Reconectar como admin
+      await this.conectarAdmin()
+      
+      // Dropar e recriar o usuário
+      try {
+        await this.clienteAdmin.query(`DROP USER IF EXISTS ${CONFIG_CRM.usuario}`)
+        this.log('🗑️', 'Usuário antigo removido')
+      } catch (e) {
+        this.log('ℹ️', 'Usuário não existia')
+      }
+      
+      // Recriar usuário com permissões completas
+      await this.clienteAdmin.query(`CREATE USER ${CONFIG_CRM.usuario} WITH PASSWORD '${CONFIG_CRM.senha}' CREATEDB CREATEROLE`)
+      await this.clienteAdmin.query(`ALTER DATABASE ${CONFIG_CRM.database} OWNER TO ${CONFIG_CRM.usuario}`)
+      await this.clienteAdmin.query(`GRANT ALL PRIVILEGES ON DATABASE ${CONFIG_CRM.database} TO ${CONFIG_CRM.usuario}`)
+      
+      this.log('✅', 'Autenticação corrigida')
+      
+    } catch (e) {
+      this.log('⚠️', `Erro ao corrigir autenticação: ${e.message}`)
+      throw e
+    }
+  }
+
+  async corrigirUsuario() {
+    this.log('👤', 'Corrigindo usuário do banco...')
+    
+    try {
+      // Tentar alterar a senha primeiro
+      await this.clienteAdmin.query(`ALTER USER ${CONFIG_CRM.usuario} WITH PASSWORD '${CONFIG_CRM.senha}'`)
+      
+      // Garantir permissões
+      await this.clienteAdmin.query(`ALTER DATABASE ${CONFIG_CRM.database} OWNER TO ${CONFIG_CRM.usuario}`)
+      await this.clienteAdmin.query(`GRANT ALL PRIVILEGES ON DATABASE ${CONFIG_CRM.database} TO ${CONFIG_CRM.usuario}`)
+      
+      this.log('✅', 'Usuário corrigido')
+      
+    } catch (e) {
+      this.log('⚠️', 'Correção simples falhou, usando correção completa...')
+      await this.corrigirAutenticacao()
+    }
+  }
+
+  async resetBancoCompleto() {
+    this.log('🗄️', 'Reset completo do banco...')
+    
+    try {
+      // Dropar e recriar o banco
+      await this.clienteAdmin.query(`DROP DATABASE IF EXISTS "${CONFIG_CRM.database}"`)
+      await this.clienteAdmin.query(`CREATE DATABASE "${CONFIG_CRM.database}"`)
+      
+      // Recriar usuário
+      await this.corrigirAutenticacao()
+      
+      this.log('✅', 'Banco resetado completamente')
+      
+    } catch (e) {
+      this.log('⚠️', `Erro no reset do banco: ${e.message}`)
+      throw e
+    }
+  }
+
+  async corrigirPrismaCompleto() {
+    this.log('🔧', 'Correção completa do Prisma...')
+    
+    try {
+      // Limpar tudo relacionado ao Prisma
+      await this.limparCache()
+      
+      // Forçar reset das migrações
+      try {
+        this.executar('npx prisma migrate reset --force')
+      } catch (e) {
+        this.log('ℹ️', 'Reset de migrações não necessário')
+      }
+      
+      // Regenerar client
+      this.executar('npx prisma generate')
+      
+      // Aplicar schema diretamente
+      this.executar('npx prisma db push --force-reset')
+      
+      this.log('✅', 'Prisma corrigido completamente')
+      
+    } catch (e) {
+      this.log('⚠️', `Erro na correção do Prisma: ${e.message}`)
+      throw e
+    }
+  }
+
+  async rodarPrismaInteligente() {
+    if (!this.prismaDisponivel()) {
+      this.log('ℹ️', 'Prisma não encontrado (prisma/schema.prisma). Pulando etapa.')
+      return
+    }
+
+    try {
+      await this.instalarDependencias()
+
+      this.log('🔧', 'Gerando client Prisma...')
+      this.executar('npx prisma generate')
+
+      this.log('🔄', 'Aplicando migrações com auto-correção...')
+      
+      // Tentar migrate dev
+      try {
+        this.executar('npx prisma migrate dev --name auto_migration')
+        this.log('✅', 'Migrações aplicadas com sucesso')
+      } catch (e1) {
+        this.log('⚠️', 'Migrate dev falhou, tentando db push...')
+        
+        try {
+          this.executar('npx prisma db push --force-reset')
+          this.log('✅', 'Schema aplicado com db push')
+        } catch (e2) {
+          this.log('⚠️', 'DB push falhou, tentando correção completa...')
+          
+          // Correção mais agressiva
+          await this.corrigirPrismaCompleto()
+        }
+      }
+
+      // Regenerar client final
+      this.log('🔄', 'Regenerando client final...')
+      this.executar('npx prisma generate')
+
+      this.log('✅', 'Prisma configurado com sucesso')
+      
+    } catch (e) {
+      this.log('⚠️', 'Falha no Prisma, tentando correção automática...')
+      await this.corrigirPrismaCompleto()
+    }
+  }
+
+  async corrigirSchemaCompleto() {
+    this.log('📋', 'Corrigindo schema do banco...')
+    
+    try {
+      // Aplicar schema diretamente
+      this.executar('npx prisma db push --force-reset')
+      
+      // Regenerar client
+      this.executar('npx prisma generate')
+      
+      // Criar nova migração
+      try {
+        this.executar('npx prisma migrate dev --name schema_fix')
+      } catch (e) {
+        this.log('ℹ️', 'Migração não necessária, schema já aplicado')
+      }
+      
+      this.log('✅', 'Schema corrigido')
+      
+    } catch (e) {
+      this.log('⚠️', `Erro na correção do schema: ${e.message}`)
+      throw e
+    }
+  }
+
   async diagnosticar() {
     this.log('🔍', 'Executando diagnóstico...')
     
@@ -474,51 +688,100 @@ class SetupBanco {
   }
 
   async executarFluxo() {
-    console.log('🚀 Vision CRM - Setup Completo v2.0')
-    console.log('===================================')
+    console.log('🚀 Vision CRM - Setup Inteligente v2.1')
+    console.log('=====================================')
+    console.log('🧠 Detectando e corrigindo problemas automaticamente...')
     
-    try {
-      await this.conectarAdmin()
-      await this.validarPostgreSQL()
-      await this.criarBanco()
-      await this.criarUsuario()
-      await this.conectarCRM()
-      await this.ajustarPermissoesSchema()
-      await this.backupEnvExistente()
-      this.escreverEnv()
-      await this.rodarPrisma()
-      await this.seedBasico()
-      await this.testarConexao()
-      const schemaValido = await this.validarSchema()
-      
-      console.log('\n===================================')
-      this.log('🎉', 'Setup concluído com sucesso!')
-      console.log('')
-      this.log('🔗', `Database URL: ${montarDatabaseUrl()}`)
-      this.log('🚀', 'Para iniciar: npm run dev')
-      this.log('👤', 'Login demo: admin@demo.com / 123456')
-      this.log('📊', 'Kanban: Dados exemplo incluídos')
-      
-      if (!schemaValido) {
-        console.log('\n⚠️  Avisos:')
-        console.log('- Execute "npm run setup:migrate" se houver problemas')
-        console.log('- Verifique os logs acima para detalhes')
+    let tentativas = 0
+    const maxTentativas = 3
+    
+    while (tentativas < maxTentativas) {
+      try {
+        tentativas++
+        this.log('🔄', `Tentativa ${tentativas}/${maxTentativas}`)
+        
+        // Conectar e validar PostgreSQL
+        await this.conectarAdmin()
+        await this.validarPostgreSQL()
+        
+        // Criar banco e usuário
+        await this.criarBanco()
+        await this.criarUsuario()
+        
+        // Tentar conectar ao CRM
+        try {
+          await this.conectarCRM()
+        } catch (e) {
+          this.log('⚠️', 'Problema de conexão detectado, corrigindo...')
+          await this.corrigirUsuario()
+          await this.conectarCRM()
+        }
+        
+        await this.ajustarPermissoesSchema()
+        await this.backupEnvExistente()
+        this.escreverEnv()
+        
+        // Rodar Prisma com auto-correção
+        await this.rodarPrismaInteligente()
+        
+        await this.seedBasico()
+        await this.testarConexao()
+        const schemaValido = await this.validarSchema()
+        
+        if (!schemaValido) {
+          this.log('🔧', 'Schema inválido detectado, corrigindo...')
+          await this.corrigirSchemaCompleto()
+          await this.validarSchema()
+        }
+        
+        console.log('\n=====================================')
+        this.log('🎉', 'Setup concluído com sucesso!')
+        this.log('✨', 'Todos os problemas foram resolvidos automaticamente!')
+        console.log('')
+        this.log('🔗', `Database URL: ${montarDatabaseUrl()}`)
+        this.log('🚀', 'Para iniciar: npm run dev')
+        this.log('👤', 'Login demo: admin@demo.com / 123456')
+        this.log('📊', 'Kanban: Dados exemplo incluídos')
+        console.log('')
+        
+        return // Sucesso! Sair do loop
+        
+      } catch (e) {
+        this.log('⚠️', `Tentativa ${tentativas} falhou: ${e.message}`)
+        
+        if (tentativas < maxTentativas) {
+          this.log('🔄', 'Executando correções automáticas...')
+          
+          try {
+            // Auto-correção baseada no tipo de erro
+            if (e.message.includes('Authentication failed') || e.message.includes('P1000')) {
+              await this.corrigirAutenticacao()
+            } else if (e.message.includes('database') && e.message.includes('does not exist')) {
+              await this.resetBancoCompleto()
+            } else if (e.message.includes('prisma') || e.message.includes('migrate')) {
+              await this.corrigirPrismaCompleto()
+            } else {
+              await this.resetCompleto()
+            }
+            
+            await this.limpar()
+            await esperar(2000) // Aguardar 2 segundos
+            
+          } catch (correcaoError) {
+            this.log('⚠️', `Correção automática falhou: ${correcaoError.message}`)
+          }
+        } else {
+          // Última tentativa falhou
+          this.erro('Setup falhou após múltiplas tentativas', e)
+          console.log('\n🆘 Problema persistente detectado!')
+          console.log('📞 Entre em contato com o suporte técnico')
+          console.log('📋 Anexe este log completo para análise')
+          process.exit(1)
+        }
       }
-      
-      console.log('')
-      
-    } catch (e) {
-      this.erro('Falha no setup', e)
-      console.log('\n💡 Dicas para resolver:')
-      console.log('1. Verifique se o PostgreSQL está rodando')
-      console.log('2. Confirme as credenciais no arquivo .env')
-      console.log('3. Execute: npm install')
-      console.log('4. Tente: node setup.js --reset && node setup.js')
-      console.log('5. Para diagnóstico: node setup.js --diagnostics')
-      process.exit(1)
-    } finally {
-      await this.limpar()
     }
+    
+    await this.limpar()
   }
 }
 

@@ -23,7 +23,7 @@ export const authMiddleware = async (req: AuthenticatedRequest, res: Response, n
     // Buscar usuário
     const usuario = await prisma.usuario.findUnique({
       where: { id: decoded.userId },
-      select: { id: true, nome: true, email: true, empresaId: true, plano: true, trialStart: true }
+      select: { id: true, nome: true, email: true, empresaId: true, plano: true, trialStart: true, trialEnd: true }
     });
 
     if (!usuario) {
@@ -37,6 +37,7 @@ export const authMiddleware = async (req: AuthenticatedRequest, res: Response, n
     const isTrialExpired = usuario.plano === 'TRIAL' && now > trialEnd;
 
     // Adicionar usuário ao request
+    req.userId = usuario.id; // Adicionar userId ao request
     req.user = {
       id: usuario.id,
       nome: usuario.nome,
@@ -51,3 +52,6 @@ export const authMiddleware = async (req: AuthenticatedRequest, res: Response, n
     res.status(401).json({ message: 'Token inválido' });
   }
 };
+
+// Alias para compatibilidade com rotas que usam authenticateToken
+export const authenticateToken = authMiddleware;

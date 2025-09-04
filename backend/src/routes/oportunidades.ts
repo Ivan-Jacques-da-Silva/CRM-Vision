@@ -1,13 +1,13 @@
 import express from 'express';
 import { PrismaClient } from '@prisma/client';
-import { authenticateToken } from '../middleware/auth';
+import { authMiddleware, AuthenticatedRequest } from '../middleware/auth';
 import { checkTrialStatus, requireActiveTrial } from '../middleware/trial';
 
 const router = express.Router();
 const prisma = new PrismaClient();
 
 // Aplicar autenticação e verificação de trial a todas as rotas
-router.use(authenticateToken);
+router.use(authMiddleware);
 router.use(checkTrialStatus);
 
 // GET /api/oportunidades - Listar oportunidades (filtrado por empresa)
@@ -27,7 +27,7 @@ router.get('/', authMiddleware, async (req: AuthenticatedRequest, res) => {
     const oportunidades = await prisma.oportunidade.findMany({
       where: whereClause,
       include: {
-        cliente: { 
+        cliente: {
           select: { nome: true, email: true, empresaId: true },
           include: { empresa: { select: { nome: true } } }
         },
@@ -86,7 +86,7 @@ router.post('/', requireActiveTrial, async (req: AuthenticatedRequest, res) => {
         empresaId: req.user?.empresaId // Adicionado empresaId à oportunidade
       },
       include: {
-        cliente: { 
+        cliente: {
           select: { nome: true, email: true, empresaId: true },
           include: { empresa: { select: { nome: true } } }
         },
@@ -129,7 +129,7 @@ router.put('/:id', requireActiveTrial, async (req: AuthenticatedRequest, res) =>
       where: { id },
       data: updates,
       include: {
-        cliente: { 
+        cliente: {
           select: { nome: true, email: true, empresaId: true },
           include: { empresa: { select: { nome: true } } }
         },
