@@ -1,9 +1,27 @@
 /**
  * Serviço de API para interação com o backend
- * Base URL: http://localhost:3001/api
+ * Detecta automaticamente o ambiente (localhost, Replit, VPS)
  */
 
-const API_BASE_URL = 'http://localhost:3001/api';
+// Detectar ambiente automaticamente
+const getApiBaseUrl = () => {
+  // Se estiver no Replit
+  if (window.location.hostname.includes('replit.app') || window.location.hostname.includes('repl.co')) {
+    // No Replit, usar a mesma URL mas trocar a porta
+    const baseUrl = window.location.hostname.replace(/(-\d+)?\./, '-5000.');
+    return `${window.location.protocol}//${baseUrl}/api`;
+  }
+  
+  // Se estiver em produção (VPS/domínio personalizado)  
+  if (window.location.hostname !== 'localhost' && window.location.hostname !== '127.0.0.1') {
+    return `${window.location.protocol}//${window.location.hostname}:5000/api`;
+  }
+  
+  // Para desenvolvimento local
+  return 'http://localhost:5000/api';
+};
+
+const API_BASE_URL = getApiBaseUrl();
 
 /**
  * Classe para lidar com erros da API
@@ -212,12 +230,27 @@ export interface Oportunidade {
   titulo: string;
   descricao?: string;
   valor: number;
-  estagio: string;
-  probabilidade: number;
-  dataFechamentoEsperada?: string;
+  status: string;
+  prioridade?: string;
+  probabilidade?: number;
+  dataPrevisao?: string;
   clienteId: string;
-  responsavelId: string;
-  criadoEm: string;
+  usuarioId: string;
+  empresaId?: string;
+  createdAt: string;
+  cliente?: {
+    id: string;
+    nome: string;
+    email: string;
+    nomeEmpresa?: string;
+    empresa?: {
+      nome: string;
+    };
+  };
+  usuario?: {
+    id: string;
+    nome: string;
+  };
 }
 
 export async function buscarOportunidades(params: any = {}) {

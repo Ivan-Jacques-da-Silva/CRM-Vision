@@ -12,7 +12,12 @@ const prisma = new PrismaClient();
 const PORT = parseInt(process.env.PORT || '5000', 10);
 
 // Middleware
-app.use(cors());
+app.use(cors({
+  origin: true, // Permite qualquer origem em desenvolvimento
+  credentials: true,
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization']
+}));
 app.use(express.json());
 
 // Log das requisições
@@ -30,7 +35,14 @@ app.use('/api/trial', trialRoutes);
 
 // Rota de teste
 app.get('/api/health', (req, res) => {
-  res.json({ message: 'Backend funcionando!', timestamp: new Date().toISOString() });
+  res.json({ 
+    message: 'Backend funcionando!', 
+    timestamp: new Date().toISOString(),
+    port: PORT,
+    host: req.get('host'),
+    url: req.url,
+    origin: req.get('origin') || 'N/A'
+  });
 });
 
 // Middleware de erro
@@ -56,7 +68,8 @@ async function startServer() {
     
     app.listen(PORT, '0.0.0.0', () => {
       console.log(`🚀 Servidor rodando na porta ${PORT}`);
-      console.log(`📊 Health check: http://localhost:${PORT}/api/health`);
+      console.log(`📊 Health check: http://0.0.0.0:${PORT}/api/health`);
+      console.log(`🌐 Servidor acessível em todas as interfaces de rede`);
     });
   } catch (error) {
     console.error('❌ Erro ao iniciar servidor:', error);

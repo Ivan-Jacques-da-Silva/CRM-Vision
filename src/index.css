@@ -1,4 +1,3 @@
-
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
@@ -81,7 +80,7 @@
     --border: 217.2 32.6% 17.5%;
     --input: 217.2 32.6% 17.5%;
     --ring: 258 88% 66%;
-    
+
     --sidebar-background: 222.2 84% 4.9%;
     --sidebar-foreground: 210 40% 98%;
     --sidebar-primary: 258 88% 66%;
@@ -92,10 +91,10 @@
     --sidebar-ring: 258 88% 66%;
 
     /* Glass effect variables for dark theme */
-    --glass-bg: rgba(15, 23, 42, 0.25);
-    --glass-border: rgba(71, 85, 105, 0.3);
-    --glass-shadow: rgba(0, 0, 0, 0.3);
-    --glass-inset: rgba(255, 255, 255, 0.1);
+    --glass-bg: rgba(15, 23, 42, 0.4);
+    --glass-border: rgba(71, 85, 105, 0.5);
+    --glass-shadow: rgba(0, 0, 0, 0.4);
+    --glass-inset: rgba(255, 255, 255, 0.15);
     --hover-glass: rgba(139, 92, 246, 0.2);
     --active-glass: rgba(139, 92, 246, 0.25);
   }
@@ -105,30 +104,62 @@
   * {
     @apply border-border;
   }
+
   body {
     @apply bg-background text-foreground;
     font-feature-settings: "rlig" 1, "calt" 1;
     min-height: 100vh;
   }
-  
+
 }
 
 @layer components {
   .card-hover {
     @apply transition-all duration-300 hover:shadow-lg;
   }
-  
+
   .glass-card {
     background: var(--glass-bg);
     backdrop-filter: blur(16px);
     -webkit-backdrop-filter: blur(16px);
     border: 1px solid var(--glass-border);
-    box-shadow: 
+    box-shadow:
       0 8px 32px 0 var(--glass-shadow),
-      0 1px 0 0 var(--glass-inset) inset;
+      0 1px 0 0 var(--glass-inset) inset,
+      0 0 0 1px rgba(255, 255, 255, 0.1) inset;
     transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
   }
 
+  .glass-card:hover {
+    border-color: rgba(255, 255, 255, 0.2);
+    box-shadow:
+      0 12px 40px 0 var(--glass-shadow),
+      0 1px 0 0 var(--glass-inset) inset,
+      0 0 0 1px rgba(255, 255, 255, 0.15) inset;
+  }
+
+  /* Light theme specific borders for Kanban cards */
+  :root .glass-card {
+    border: 1px solid rgba(0, 0, 0, 0.1);
+  }
+
+  :root .glass-card:hover {
+    border-color: rgba(0, 0, 0, 0.15);
+  }
+
+  /* Kanban column headers in light theme */
+  :root .kanban-header {
+    border: 1px solid rgba(0, 0, 0, 0.08);
+  }
+
+  /* Card titles and content borders in light theme */
+  :root .kanban-card {
+    border: 1px solid rgba(0, 0, 0, 0.12);
+  }
+
+  :root .kanban-card:hover {
+    border-color: rgba(0, 0, 0, 0.18);
+  }
 
   .glass-button {
     background: var(--glass-bg);
@@ -142,11 +173,11 @@
   .glass-button:active {
     background: var(--active-glass);
   }
-  
+
   .tag {
     @apply inline-flex items-center rounded-full px-3 py-1 text-xs font-medium glass-card;
   }
-  
+
 }
 
 
@@ -155,6 +186,7 @@
     opacity: 0;
     transform: translateY(30px);
   }
+
   to {
     opacity: 1;
     transform: translateY(0);
@@ -166,6 +198,7 @@
     opacity: 0;
     transform: scale(0.9);
   }
+
   to {
     opacity: 1;
     transform: scale(1);
@@ -182,3 +215,29 @@
 
 
 /* Removed problematic interactive-element class that was blocking clicks */
+
+/* Drag and Drop improvements */
+[data-rfd-draggable-context-id] {
+  cursor: grab !important;
+}
+
+[data-rfd-draggable-context-id]:active {
+  cursor: grabbing !important;
+}
+
+/* Fix drag offset issues */
+[data-rfd-drag-handle-context-id] {
+  touch-action: none;
+  user-select: none;
+}
+
+/* Ensure draggable items maintain proper positioning during drag */
+[data-rfd-draggable-id] {
+  transform-origin: top left;
+}
+
+
+/* Ensure proper drag handle behavior */
+[data-rfd-drag-handle-dragging="true"] {
+  cursor: grabbing !important;
+}

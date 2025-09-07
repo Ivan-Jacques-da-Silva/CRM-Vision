@@ -4,12 +4,12 @@ const { spawn } = require('child_process');
 const { createProxyMiddleware } = require('http-proxy-middleware');
 const express = require('express');
 
-// Start backend server on port 3001
-console.log('🚀 Starting backend server on port 3001...');
+// Start backend server on port 5000
+console.log('🚀 Starting backend server on port 5000...');
 const backend = spawn('npm', ['run', 'dev'], { 
   cwd: './backend',
   stdio: 'inherit',
-  env: { ...process.env, PORT: '3001' }
+  env: { ...process.env, PORT: '5000' }
 });
 
 // Wait a moment for backend to start, then start frontend

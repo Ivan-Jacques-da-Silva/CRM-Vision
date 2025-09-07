@@ -4,20 +4,20 @@ import { createServer } from 'vite'
 import { spawn } from 'child_process'
 
 async function startServers() {
-  // Start backend on port 3001
+  // Start backend on port 5000
   console.log('🚀 Starting backend server...')
   const backend = spawn('npm', ['run', 'dev'], {
     cwd: './backend',
     stdio: 'inherit',
-    env: { ...process.env, PORT: '3001' }
+    env: { ...process.env, PORT: '5000' }
   })
 
-  // Start frontend Vite server on port 5000
+  // Start frontend Vite server on port 3000
   console.log('🚀 Starting Vite dev server...')
   const server = await createServer({
     server: {
       host: '0.0.0.0',
-      port: 5000
+      port: 3000
     }
   })
   

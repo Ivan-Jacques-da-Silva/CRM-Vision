@@ -28,10 +28,15 @@ router.get('/', authMiddleware, async (req: AuthenticatedRequest, res) => {
       where: whereClause,
       include: {
         cliente: {
-          select: { nome: true, email: true, empresaId: true },
-          include: { empresa: { select: { nome: true } } }
+          include: { 
+            empresa: { 
+              select: { nome: true } 
+            } 
+          }
         },
-        usuario: { select: { nome: true } }
+        usuario: { 
+          select: { nome: true } 
+        }
       },
       orderBy: { createdAt: 'desc' }
     });
@@ -83,14 +88,19 @@ router.post('/', requireActiveTrial, async (req: AuthenticatedRequest, res) => {
         dataPrevisao: dataPrevisao ? new Date(dataPrevisao) : null,
         clienteId,
         usuarioId: req.userId!,
-        empresaId: req.user?.empresaId // Adicionado empresaId à oportunidade
+        empresaId: req.user?.empresaId
       },
       include: {
         cliente: {
-          select: { nome: true, email: true, empresaId: true },
-          include: { empresa: { select: { nome: true } } }
+          include: { 
+            empresa: { 
+              select: { nome: true } 
+            } 
+          }
         },
-        usuario: { select: { nome: true } }
+        usuario: { 
+          select: { nome: true } 
+        }
       }
     });
 
@@ -130,10 +140,15 @@ router.put('/:id', requireActiveTrial, async (req: AuthenticatedRequest, res) =>
       data: updates,
       include: {
         cliente: {
-          select: { nome: true, email: true, empresaId: true },
-          include: { empresa: { select: { nome: true } } }
+          include: { 
+            empresa: { 
+              select: { nome: true } 
+            } 
+          }
         },
-        usuario: { select: { nome: true } }
+        usuario: { 
+          select: { nome: true } 
+        }
       }
     });
 

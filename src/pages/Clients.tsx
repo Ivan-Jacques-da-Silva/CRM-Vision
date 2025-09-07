@@ -241,7 +241,7 @@ export function Clients() {
                       </Badge>
                     </TableCell>
                     <TableCell>
-                      {format(new Date(client.criadoEm), "dd/MM/yyyy", { locale: ptBR })}
+                      {client.criadoEm ? format(new Date(client.criadoEm), "dd/MM/yyyy", { locale: ptBR }) : 'N/A'}
                     </TableCell>
                     <TableCell>
                       <div className="flex flex-wrap gap-1">
