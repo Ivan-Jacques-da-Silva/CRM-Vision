@@ -31,8 +31,6 @@ export default defineConfig({
   server: {
     host: "0.0.0.0",
     port: 5173,
-    allowedHosts: [
-      "7b904d41-b8a4-4d35-9dd4-c04b24c5260a-00-18auqh2ixtaer.worf.replit.dev",
-    ],
+    allowedHosts: "all",
   },
 });
