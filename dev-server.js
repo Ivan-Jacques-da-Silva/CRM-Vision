@@ -12,17 +12,18 @@ async function startServers() {
     env: { ...process.env, PORT: '5000' }
   })
 
-  // Start frontend Vite server on port 3000
+  // Start frontend Vite server on port 5173
   console.log('🚀 Starting Vite dev server...')
   const server = await createServer({
     server: {
       host: '0.0.0.0',
-      port: 3000
+      port: 5173,
+      allowedHosts: true
     }
   })
   
   await server.listen()
-  console.log('✅ Frontend server ready on port 5000')
+  console.log('✅ Frontend server ready on port 5173')
   
   // Handle graceful shutdown
   process.on('SIGINT', async () => {
