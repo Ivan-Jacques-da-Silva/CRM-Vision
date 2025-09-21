@@ -3,25 +3,16 @@
  * Detecta automaticamente o ambiente (localhost, Replit, VPS)
  */
 
-// Detectar ambiente automaticamente
-const getApiBaseUrl = () => {
-  // Se estiver no Replit
-  if (window.location.hostname.includes('replit.app') || window.location.hostname.includes('repl.co')) {
-    // No Replit, usar a mesma URL mas trocar a porta
-    const baseUrl = window.location.hostname.replace(/(-\d+)?\./, '-5000.');
-    return `${window.location.protocol}//${baseUrl}/api`;
-  }
-  
-  // Se estiver em produção (VPS/domínio personalizado)  
-  if (window.location.hostname !== 'localhost' && window.location.hostname !== '127.0.0.1') {
-    return `${window.location.protocol}//${window.location.hostname}:5000/api`;
-  }
-  
-  // Para desenvolvimento local
-  return 'http://localhost:5000/api';
-};
+import { detectBrowserEnvironment, logEnvironmentConfig } from '@shared/environment';
 
-const API_BASE_URL = getApiBaseUrl();
+// Configuração automática do ambiente
+const environmentConfig = detectBrowserEnvironment();
+const API_BASE_URL = environmentConfig.apiBaseUrl!;
+
+// Log da configuração para debug
+if (import.meta.env.DEV) {
+  logEnvironmentConfig(environmentConfig, 'frontend');
+}
 
 /**
  * Classe para lidar com erros da API

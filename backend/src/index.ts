@@ -1,7 +1,5 @@
 import express from 'express';
 import cors from 'cors';
-import helmet from 'helmet';
-import rateLimit from 'express-rate-limit';
 import { PrismaClient } from '@prisma/client';
 import authRoutes from './routes/auth';
 import clientesRoutes from './routes/clientes';
@@ -11,7 +9,7 @@ import trialRoutes from './routes/trial';
 
 const app = express();
 const prisma = new PrismaClient();
-const PORT = parseInt(process.env.PORT || '5050', 10);
+const PORT = parseInt(process.env.PORT || '5000', 10);
 
 // Verificação de segurança - JWT Secret obrigatório
 if (!process.env.JWT_SECRET) {
@@ -40,28 +38,6 @@ app.use(cors({
   allowedHeaders: ['Content-Type', 'Authorization']
 }));
 
-// Middlewares de segurança
-app.use(helmet({
-  crossOriginEmbedderPolicy: false // Permite embeds se necessário
-}));
-
-// Rate limiting
-const limiter = rateLimit({
-  windowMs: 15 * 60 * 1000, // 15 minutos
-  max: 100, // limite de 100 requests por IP por janela
-  message: 'Muitas requisições deste IP, tente novamente em 15 minutos.',
-  standardHeaders: true,
-  legacyHeaders: false,
-});
-app.use(limiter);
-
-// Rate limiting mais restritivo para rotas de autenticação
-const authLimiter = rateLimit({
-  windowMs: 15 * 60 * 1000,
-  max: 5, // apenas 5 tentativas de login por IP por 15 minutos
-  message: 'Muitas tentativas de login, tente novamente em 15 minutos.',
-});
-
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 
@@ -72,7 +48,7 @@ app.use((req: express.Request, res: express.Response, next: express.NextFunction
 });
 
 // Rotas
-app.use('/api/auth', authLimiter, authRoutes);
+app.use('/api/auth', authRoutes);
 app.use('/api/clientes', clientesRoutes);
 app.use('/api/tarefas', tarefasRoutes);
 app.use('/api/oportunidades', oportunidadesRoutes);
@@ -107,6 +83,8 @@ app.use('*', (req: express.Request, res: express.Response) => {
 // Iniciar servidor
 async function startServer() {
   try {
+    console.log(`🔗 Origins permitidas no CORS:`, allowedOrigins);
+    
     // Conectar ao banco
     await prisma.$connect();
     console.log('✅ Conectado ao banco de dados');
