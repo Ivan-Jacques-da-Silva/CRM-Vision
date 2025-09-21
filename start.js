@@ -13,7 +13,8 @@ const backend = spawn('npm', ['run', 'dev'], {
   env: { 
     ...process.env, 
     PORT: '5050',
-    NODE_ENV: 'development'
+    NODE_ENV: 'development',
+    DATABASE_URL: process.env.DATABASE_URL
   }
 });
 

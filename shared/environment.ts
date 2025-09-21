@@ -79,7 +79,7 @@ export function detectServerEnvironment(): EnvironmentConfig {
   // Detectar Replit
   if (REPL_ID || REPLIT_DB_URL || REPL_SLUG) {
     environment = 'replit';
-    backendPort = 5000; // Replit usa porta 5000 para backend
+    backendPort = parseInt(process.env.PORT || '5050', 10); // Allow PORT override, default 5050
     
     if (REPL_SLUG && REPL_OWNER) {
       frontendUrl = process.env.FRONTEND_URL || `https://${REPL_SLUG}-${REPL_OWNER}-5173.replit.app`;
