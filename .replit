@@ -30,7 +30,7 @@ localPort = 5173
 externalPort = 5173
 
 [workflows]
-runButton = "Start Backend"
+runButton = "Start Full Application"
 
 [[workflows.workflow]]
 name = "Project"
@@ -58,5 +58,27 @@ mode = "sequential"
 [[workflows.workflow.tasks]]
 task = "shell.exec"
 args = "cd backend && npm run dev"
+
+[[workflows.workflow]]
+name = "Start Full Application"
+author = 47849822
+mode = "parallel"
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "cd backend && npm run dev"
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "npm run dev"
+
+[[workflows.workflow]]
+name = "Start Frontend Only"
+author = 47849822
+mode = "sequential"
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "npm run dev"
 
 [agent]
