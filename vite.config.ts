@@ -8,12 +8,12 @@ export default defineConfig({
     react(),
     runtimeErrorOverlay(),
     ...(process.env.NODE_ENV !== "production" &&
-      process.env.REPL_ID !== undefined
+    process.env.REPL_ID !== undefined
       ? [
-        await import("@replit/vite-plugin-cartographer").then((m) =>
-          m.cartographer(),
-        ),
-      ]
+          await import("@replit/vite-plugin-cartographer").then((m) =>
+            m.cartographer(),
+          ),
+        ]
       : []),
   ],
   resolve: {
@@ -32,7 +32,7 @@ export default defineConfig({
     host: "0.0.0.0",
     port: 5173,
     allowedHosts: [
-      "67296882-8997-496c-bfbf-da0fbf63cc32-00-pr6mep0itz27.janeway.replit.dev"
+      "7b904d41-b8a4-4d35-9dd4-c04b24c5260a-00-18auqh2ixtaer.worf.replit.dev",
     ],
   },
 });
