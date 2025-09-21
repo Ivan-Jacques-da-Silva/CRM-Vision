@@ -1,37 +1,71 @@
+import { config as dotenvConfig } from 'dotenv';
+import { resolve } from 'path';
 import express from 'express';
 import cors from 'cors';
 import { PrismaClient } from '@prisma/client';
+import { detectServerEnvironment, getCorsOrigins, logEnvironmentConfig } from '../../shared/environment';
 import authRoutes from './routes/auth';
 import clientesRoutes from './routes/clientes';
 import tarefasRoutes from './routes/tarefas';
 import oportunidadesRoutes from './routes/oportunidades';
 import trialRoutes from './routes/trial';
 
+// Configurar dotenv para carregar .env de múltiplos locais
+[
+  resolve(process.cwd(), 'backend/.env'),
+  resolve(process.cwd(), '.env'),
+  resolve(__dirname, '../.env')
+].forEach(path => {
+  dotenvConfig({ path, override: false });
+});
+
 const app = express();
 const prisma = new PrismaClient();
-const PORT = parseInt(process.env.PORT || '5000', 10);
+
+// Configuração automática do ambiente
+const environmentConfig = detectServerEnvironment();
+const PORT = environmentConfig.backendPort!;
 
 // Verificação de segurança - JWT Secret obrigatório
 if (!process.env.JWT_SECRET) {
   console.error('❌ JWT_SECRET é obrigatório. Configure a variável de ambiente.');
-  process.exit(1);
+  if (environmentConfig.isDevelopment || environmentConfig.isReplit) {
+    console.warn('⚠️  Continuando sem JWT_SECRET em ambiente de desenvolvimento/Replit');
+  } else {
+    process.exit(1);
+  }
 }
 
-// Configuração segura do CORS
-const allowedOrigins = process.env.FRONTEND_URL ? 
-  [process.env.FRONTEND_URL] : 
-  ['http://localhost:5173', 'http://localhost:5000', 'http://0.0.0.0:5173', 'http://0.0.0.0:5000'];
+// Configuração segura do CORS baseada no ambiente
+const allowedOrigins = getCorsOrigins(environmentConfig);
 
 app.use(cors({
   origin: (origin, callback) => {
     // Permite requisições sem origin (ex: Postman, mobile apps)
     if (!origin) return callback(null, true);
     
+    // Verificar lista exata primeiro
     if (allowedOrigins.includes(origin)) {
-      callback(null, true);
-    } else {
-      callback(new Error('Não permitido pelo CORS'));
+      return callback(null, true);
     }
+    
+    // Para Replit, verificar padrões dinâmicos
+    if (environmentConfig.isReplit) {
+      const replitPattern = /^https:\/\/[\w-]+-[\w-]+(-\d+)?\.(replit\.app|repl\.co)$/;
+      if (replitPattern.test(origin)) {
+        return callback(null, true);
+      }
+    }
+    
+    // Para desenvolvimento, ser mais permissivo com localhost
+    if (environmentConfig.isDevelopment) {
+      const devPattern = /^https?:\/\/(localhost|127\.0\.0\.1|0\.0\.0\.0)(:\d+)?$/;
+      if (devPattern.test(origin)) {
+        return callback(null, true);
+      }
+    }
+    
+    callback(new Error('Não permitido pelo CORS'));
   },
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
@@ -83,20 +117,33 @@ app.use('*', (req: express.Request, res: express.Response) => {
 // Iniciar servidor
 async function startServer() {
   try {
+    // Log da configuração de ambiente
+    logEnvironmentConfig(environmentConfig, 'backend');
     console.log(`🔗 Origins permitidas no CORS:`, allowedOrigins);
     
-    // Conectar ao banco
-    await prisma.$connect();
-    console.log('✅ Conectado ao banco de dados');
-    
+    // Iniciar servidor primeiro
     app.listen(PORT, '0.0.0.0', () => {
       console.log(`🚀 Servidor rodando na porta ${PORT}`);
       console.log(`📊 Health check: http://0.0.0.0:${PORT}/api/health`);
       console.log(`🌐 Servidor acessível em todas as interfaces de rede`);
+      
+      // Conectar ao banco após o servidor estar rodando
+      connectToDatabase();
     });
   } catch (error) {
     console.error('❌ Erro ao iniciar servidor:', error);
     process.exit(1);
+  }
+}
+
+async function connectToDatabase() {
+  try {
+    await prisma.$connect();
+    console.log('✅ Conectado ao banco de dados');
+  } catch (error) {
+    console.error('⚠️  Erro ao conectar com o banco de dados:', error);
+    console.log('🔄 Tentando reconectar em 5 segundos...');
+    setTimeout(connectToDatabase, 5000);
   }
 }
 

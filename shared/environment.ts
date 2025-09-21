@@ -68,6 +68,8 @@ export function detectBrowserEnvironment(): EnvironmentConfig {
 export function detectServerEnvironment(): EnvironmentConfig {
   const NODE_ENV = process.env.NODE_ENV || 'development';
   const REPL_ID = process.env.REPL_ID;
+  const REPL_SLUG = process.env.REPL_SLUG;
+  const REPL_OWNER = process.env.REPL_OWNER;
   const REPLIT_DB_URL = process.env.REPLIT_DB_URL;
   
   let environment: Environment;
@@ -75,10 +77,15 @@ export function detectServerEnvironment(): EnvironmentConfig {
   let frontendUrl: string;
   
   // Detectar Replit
-  if (REPL_ID || REPLIT_DB_URL) {
+  if (REPL_ID || REPLIT_DB_URL || REPL_SLUG) {
     environment = 'replit';
     backendPort = 5000; // Replit usa porta 5000 para backend
-    frontendUrl = process.env.FRONTEND_URL || `https://${REPL_ID}.replit.app`;
+    
+    if (REPL_SLUG && REPL_OWNER) {
+      frontendUrl = process.env.FRONTEND_URL || `https://${REPL_SLUG}-${REPL_OWNER}-5173.replit.app`;
+    } else {
+      frontendUrl = process.env.FRONTEND_URL || 'https://repl-frontend.replit.app';
+    }
   }
   // Detectar desenvolvimento local
   else if (NODE_ENV === 'development') {
@@ -120,13 +127,23 @@ export function getCorsOrigins(config: EnvironmentConfig): string[] {
   }
   
   if (config.isReplit) {
-    const replId = process.env.REPL_ID;
-    return [
-      `https://${replId}.replit.app`,
-      `https://${replId}-5173.replit.app`,
-      `https://${replId}-5000.replit.app`,
-      config.frontendUrl
-    ].filter(Boolean) as string[];
+    const replSlug = process.env.REPL_SLUG;
+    const replOwner = process.env.REPL_OWNER;
+    
+    const origins = [config.frontendUrl];
+    
+    if (replSlug && replOwner) {
+      origins.push(
+        `https://${replSlug}-${replOwner}.replit.app`,
+        `https://${replSlug}-${replOwner}-5173.replit.app`,
+        `https://${replSlug}-${replOwner}-5000.replit.app`,
+        `https://${replSlug}-${replOwner}.repl.co`,
+        `https://${replSlug}-${replOwner}-5173.repl.co`,
+        `https://${replSlug}-${replOwner}-5000.repl.co`
+      );
+    }
+    
+    return origins.filter(Boolean) as string[];
   }
   
   if (config.isVPS) {
