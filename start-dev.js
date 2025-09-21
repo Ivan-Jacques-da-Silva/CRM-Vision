@@ -1,8 +1,8 @@
 #!/usr/bin/env node
 
-const { spawn } = require('child_process');
-const { createProxyMiddleware } = require('http-proxy-middleware');
-const express = require('express');
+import { spawn } from 'child_process';
+import { createProxyMiddleware } from 'http-proxy-middleware';
+import express from 'express';
 
 // Start backend server on port 5000
 console.log('🚀 Starting backend server on port 5000...');
