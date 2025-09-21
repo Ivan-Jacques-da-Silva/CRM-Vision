@@ -93,6 +93,13 @@ export const Login: React.FC = () => {
     }));
   };
 
+  const fillDemoCredentials = (email: string, password: string) => {
+    setFormData({
+      email: email,
+      senha: password
+    });
+  };
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-primary/10 to-background flex items-center justify-center p-4">
       <Card className="w-full max-w-md">
@@ -179,13 +186,31 @@ export const Login: React.FC = () => {
             </Button>
           </form>
 
-          <div className="mt-6 text-center space-y-2">
+          <div className="mt-6 text-center space-y-3">
             <div className="text-sm text-muted-foreground">
-              <strong>Acesso Demo:</strong>
+              <strong>Acesso Demo - Clique para preencher:</strong>
             </div>
-            <div className="text-xs text-muted-foreground space-y-1">
-              <div>📧 demo@crm.com | 🔑 demo123</div>
-              <div>📧 admin@crm.com | 🔑 admin123</div>
+            <div className="space-y-2">
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                className="w-full text-xs"
+                onClick={() => fillDemoCredentials('demo@crm.com', 'demo123')}
+                data-testid="button-demo-user"
+              >
+                📧 demo@crm.com | 🔑 demo123
+              </Button>
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                className="w-full text-xs"
+                onClick={() => fillDemoCredentials('admin@crm.com', 'admin123')}
+                data-testid="button-admin-user"
+              >
+                📧 admin@crm.com | 🔑 admin123
+              </Button>
             </div>
             <Link 
               to="/plans" 

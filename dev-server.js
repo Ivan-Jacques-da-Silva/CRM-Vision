@@ -9,12 +9,13 @@ async function startServers() {
   const backend = spawn('npm', ['run', 'dev'], {
     cwd: './backend',
     stdio: 'inherit',
-    env: { ...process.env, PORT: '5000' }
+    env: { ...process.env, NODE_ENV: 'development', PORT: '5000' }
   })
 
   // Start frontend Vite server on port 5173
   console.log('🚀 Starting Vite dev server...')
   const server = await createServer({
+    mode: 'development',
     server: {
       host: '0.0.0.0',
       port: 5173,
