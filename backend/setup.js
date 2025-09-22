@@ -213,6 +213,31 @@ class SetupBanco {
     })
   }
 
+  async limparDadosExistentes() {
+    this.log('🧹', 'Limpando dados existentes...')
+    
+    try {
+      // Deletar em ordem devido às relações
+      await this.clienteCRM.query('DELETE FROM tarefas')
+      await this.clienteCRM.query('DELETE FROM oportunidades')
+      await this.clienteCRM.query('DELETE FROM clientes')
+      await this.clienteCRM.query('DELETE FROM usuarios')
+      await this.clienteCRM.query('DELETE FROM empresas')
+      
+      this.log('✅', 'Dados existentes removidos com sucesso')
+    } catch (error) {
+      this.log('⚠️', `Erro ao limpar dados: ${error.message}`)
+      // Se falhar, tentar reset das tabelas via Prisma
+      try {
+        this.log('🔄', 'Tentando reset via Prisma...')
+        this.executar('npx prisma db push --force-reset')
+        this.log('✅', 'Reset via Prisma concluído')
+      } catch (prismaError) {
+        this.log('⚠️', 'Reset via Prisma também falhou, continuando...')
+      }
+    }
+  }
+
   async instalarDependencias() {
     if (!this.nodeModulesExiste()) {
       this.log('📦', 'Instalando dependências...')
@@ -300,12 +325,11 @@ class SetupBanco {
       // Verificar se há usuários (nome correto da tabela)
       const r = await this.clienteCRM.query(`SELECT COUNT(*)::int AS n FROM usuarios`)
       if (r.rows[0].n > 0) {
-        this.log('✅', 'Já há dados. Pulando seed.')
-        return
+        this.log('🗑️', 'Dados existentes detectados. Limpando para recriar...')
+        await this.limparDadosExistentes()
       }
     } catch (e) {
-      this.log('ℹ️', 'Tabelas ainda não existem. Pulando seed.')
-      return
+      this.log('ℹ️', 'Tabelas ainda não existem. Criando dados iniciais...')
     }
 
     try {
@@ -682,6 +706,30 @@ class SetupBanco {
     }
   }
 
+  async executarSeedCompleto() {
+    this.log('🌱', 'Executando seed completo com dados exemplares...')
+    
+    try {
+      // Executar o seed-data.js que tem dados mais completos
+      this.executar('node seed-data.js --reset', { 
+        stdio: 'pipe',
+        encoding: 'utf8'
+      })
+      
+      this.log('✅', 'Seed completo executado com sucesso!')
+      this.log('📊', 'Dados criados:')
+      this.log('   🏢', '3 Empresas')
+      this.log('   👥', '3 Usuários (admin, vendedor, gerente)')  
+      this.log('   👤', '5 Clientes diversos')
+      this.log('   🎯', '7 Oportunidades (Kanban completo)')
+      this.log('   📋', '10 Tarefas com prazos')
+      
+    } catch (error) {
+      this.log('⚠️', `Seed completo falhou, usando seed básico: ${error.message}`)
+      // Se falhar, continuar com o seed básico que já foi executado
+    }
+  }
+
   async limpar() {
     try { if (this.clienteCRM) await this.clienteCRM.end() } catch (_) {}
     try { if (this.clienteAdmin) await this.clienteAdmin.end() } catch (_) {}
@@ -725,6 +773,10 @@ class SetupBanco {
         await this.rodarPrismaInteligente()
         
         await this.seedBasico()
+        
+        // Executar seed completo usando o seed-data.js
+        await this.executarSeedCompleto()
+        
         await this.testarConexao()
         const schemaValido = await this.validarSchema()
         
@@ -742,6 +794,7 @@ class SetupBanco {
         this.log('🚀', 'Para iniciar: npm run dev')
         this.log('👤', 'Login demo: admin@demo.com / 123456')
         this.log('📊', 'Kanban: Dados exemplo incluídos')
+        this.log('🌱', 'Dados completos: empresas, usuários, clientes, oportunidades e tarefas')
         console.log('')
         
         return // Sucesso! Sair do loop
@@ -792,27 +845,32 @@ if (require.main === module) {
   
   if (args.includes('--help') || args.includes('-h')) {
     console.log(`
-🚀 Vision CRM Setup v2.0
+🚀 Vision CRM Setup v2.1 - Setup Inteligente
 
 Uso:
-  node setup.js                    # Setup completo
-  node setup.js --reset           # Reset completo (APAGA TUDO!)
+  node setup.js                    # Setup completo com dados (AUTOMÁTICO!)
   node setup.js --migrate         # Apenas migrações
-  node setup.js --seed            # Apenas seed
   node setup.js --diagnostics     # Diagnóstico do ambiente
   node setup.js --fix-prisma      # Corrigir problemas do Prisma
   
+Comportamento automático:
+  ✨ Detecta dados existentes e apaga automaticamente
+  🗄️ Configura banco e usuário automaticamente  
+  🌱 Cria dados de exemplo completos (empresas, clientes, etc.)
+  🎯 Configura Kanban com oportunidades de exemplo
+  📋 Adiciona tarefas com prazos realistas
+  
 Exemplos:
-  node setup.js --reset && node setup.js    # Reset total e reconfigurar
-  node setup.js --fix-prisma                # Corrigir TypeScript errors
+  node setup.js                    # Tudo em um comando!
+  node setup.js --fix-prisma      # Corrigir TypeScript errors
   
 Opções:
   --help, -h                       # Mostrar esta ajuda
-  --reset                          # Reset do banco (APAGA TUDO!)
   --migrate                        # Rodar apenas migrações
-  --seed                           # Rodar apenas seed  
   --diagnostics                    # Checar status do ambiente
   --fix-prisma                     # Limpar cache e regenerar Prisma
+  
+⚡ NOVO: Agora um único comando faz tudo! Não precisa mais de --reset ou --seed
     `)
     process.exit(0)
   }
@@ -835,15 +893,6 @@ Opções:
     return
   }
   
-  if (args.includes('--reset')) {
-    console.log('⚠️  ATENÇÃO: Isso vai APAGAR todos os dados!')
-    console.log('🔄 Executando reset completo...')
-    setup.resetCompleto()
-      .then(() => console.log('✅ Reset concluído. Execute "node setup.js" para reconfigurar'))
-      .catch(console.error)
-    return
-  }
-  
   if (args.includes('--migrate')) {
     console.log('🔄 Executando apenas migrações...')
     setup.limparCache()
@@ -851,14 +900,6 @@ Opções:
     setup.executar('npx prisma generate')
     console.log('✅ Migrações concluídas')
     process.exit(0)
-  }
-  
-  if (args.includes('--seed')) {
-    setup.conectarCRM()
-      .then(() => setup.seedBasico())
-      .then(() => setup.limpar())
-      .catch(console.error)
-    return
   }
   
   setup.executarFluxo().catch(console.error)
