@@ -404,19 +404,19 @@ export const KanbanBoard: React.FC = () => {
                               <div
                                 ref={prov.innerRef}
                                 {...prov.draggableProps}
+                                {...prov.dragHandleProps}
                                 className={
                                   snap.isDragging
-                                    ? "cursor-grabbing"
+                                    ? "cursor-grabbing opacity-80 z-[999] shadow-2xl"
                                     : "cursor-grab"
                                 }
                                 style={prov.draggableProps.style}
                                 data-testid={`card-opportunity-${oportunidade.id}`}
                               >
                                 <Card
-                                  {...prov.dragHandleProps}
                                   className={
                                     snap.isDragging
-                                      ? "border border-primary/50"
+                                      ? "border border-primary/50 pointer-events-none"
                                       : "glass-card border-border/50 bg-card/80 backdrop-blur-sm"
                                   }
                                 >
@@ -425,11 +425,18 @@ export const KanbanBoard: React.FC = () => {
                                       <CardTitle className="text-sm font-medium truncate flex-1 min-w-0">
                                         {oportunidade.titulo}
                                       </CardTitle>
-                                      <div className="flex gap-0.5 flex-shrink-0">
+                                      <div className="flex gap-0.5 flex-shrink-0 pointer-events-auto">
                                         <Button
                                           variant="ghost"
                                           size="icon"
                                           className="h-5 w-5"
+                                          onMouseDown={(e) => {
+                                            e.stopPropagation();
+                                          }}
+                                          onClick={(e) => {
+                                            e.stopPropagation();
+                                            e.preventDefault();
+                                          }}
                                           data-testid={`button-edit-opportunity-${oportunidade.id}`}
                                         >
                                           <Edit2 className="w-2.5 h-2.5" />
@@ -438,8 +445,12 @@ export const KanbanBoard: React.FC = () => {
                                           variant="ghost"
                                           size="icon"
                                           className="h-5 w-5"
+                                          onMouseDown={(e) => {
+                                            e.stopPropagation();
+                                          }}
                                           onClick={(e) => {
                                             e.stopPropagation();
+                                            e.preventDefault();
                                             excluirOportunidadeHandler(
                                               oportunidade.id,
                                             );
