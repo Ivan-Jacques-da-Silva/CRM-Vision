@@ -123,35 +123,13 @@
     backdrop-filter: blur(16px);
     -webkit-backdrop-filter: blur(16px);
     border: 1px solid var(--glass-border);
-    box-shadow:
-      0 8px 32px 0 var(--glass-shadow),
-      0 1px 0 0 var(--glass-inset) inset,
-      0 0 0 1px rgba(255, 255, 255, 0.1) inset;
+    box-shadow: 0 4px 16px 0 var(--glass-shadow);
     transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
   }
 
   .glass-card:hover:not([data-rfd-drag-handle-dragging="true"]) {
     border-color: rgba(255, 255, 255, 0.2);
-    box-shadow:
-      0 12px 40px 0 var(--glass-shadow),
-      0 1px 0 0 var(--glass-inset) inset,
-      0 0 0 1px rgba(255, 255, 255, 0.15) inset;
-  }
-
-  /* Override glass effects completely during drag */
-  .glass-card[data-rfd-drag-handle-dragging="true"] {
-    backdrop-filter: none !important;
-    -webkit-backdrop-filter: none !important;
-    background: rgba(255, 255, 255, 0.95) !important;
-    border: 1px solid rgba(0, 0, 0, 0.1) !important;
-    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15) !important;
-    transform-origin: center !important;
-  }
-
-  .dark .glass-card[data-rfd-drag-handle-dragging="true"] {
-    background: rgba(30, 30, 30, 0.95) !important;
-    border: 1px solid rgba(255, 255, 255, 0.1) !important;
-    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3) !important;
+    box-shadow: 0 6px 20px 0 var(--glass-shadow);
   }
 
   /* Light theme specific borders for Kanban cards */
@@ -232,7 +210,7 @@
 
 /* Removed problematic interactive-element class that was blocking clicks */
 
-/* Drag and Drop improvements - Minimal approach */
+/* Clean drag and drop - no positioning conflicts */
 [data-rfd-draggable-context-id] {
   cursor: grab !important;
 }
@@ -246,19 +224,27 @@
   user-select: none;
 }
 
-/* Only disable backdrop-filter during drag to prevent visual glitches */
+/* Minimal drag styling without positioning interference */
 [data-rfd-drag-handle-dragging="true"] {
   cursor: grabbing !important;
+  opacity: 0.9 !important;
+}
+
+/* Remove all backdrop filters and complex styling during drag */
+[data-rfd-drag-handle-dragging="true"] * {
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2) !important;
 }
 
 [data-rfd-drag-handle-dragging="true"] .glass-card {
+  background: rgba(255, 255, 255, 0.98) !important;
+  border: 1px solid rgba(0, 0, 0, 0.1) !important;
   backdrop-filter: none !important;
   -webkit-backdrop-filter: none !important;
-  background: rgba(255, 255, 255, 0.95) !important;
-  border: 1px solid rgba(0, 0, 0, 0.1) !important;
 }
 
 .dark [data-rfd-drag-handle-dragging="true"] .glass-card {
-  background: rgba(30, 30, 30, 0.95) !important;
+  background: rgba(30, 30, 30, 0.98) !important;
   border: 1px solid rgba(255, 255, 255, 0.1) !important;
 }

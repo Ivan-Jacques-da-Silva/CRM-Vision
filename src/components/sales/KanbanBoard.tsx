@@ -394,11 +394,14 @@ export const KanbanBoard: React.FC = () => {
                                 ref={prov.innerRef}
                                 {...prov.draggableProps}
                                 {...prov.dragHandleProps}
-                                className={`cursor-grab glass-card kanban-card transition-all duration-200 hover:shadow-md ${snap.isDragging
-                                  ? "shadow-2xl opacity-95"
-                                  : "hover:shadow-lg"
+                                className={`cursor-grab glass-card kanban-card ${snap.isDragging
+                                  ? "opacity-90"
+                                  : "hover:shadow-lg transition-shadow duration-200"
                                   }`}
-                                style={prov.draggableProps.style}
+                                style={{
+                                  ...prov.draggableProps.style,
+                                  transform: prov.draggableProps.style?.transform
+                                }}
                                 data-testid={`card-opportunity-${oportunidade.id}`}
                               >
                                 <CardHeader className="pb-2">
