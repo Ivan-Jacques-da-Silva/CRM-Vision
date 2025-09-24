@@ -275,13 +275,13 @@ export const KanbanBoard: React.FC = () => {
 
   return (
     <div className="h-full flex flex-col">
-      {/* Seletor de Pipeline */}
-      <div className="flex items-center justify-between p-4 border-b border-border/50">
-        <div className="flex items-center gap-4">
+      {/* Compact Pipeline Selector */}
+      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between p-3 border-b border-border/50 bg-muted/20 gap-3 sm:gap-0">
+        <div className="flex items-center gap-2 sm:gap-3 w-full sm:w-auto">
           <select
             value={pipelineAtivo}
             onChange={(e) => setPipelineAtivo(e.target.value)}
-            className="bg-background border border-border rounded-lg px-3 py-2 text-foreground"
+            className="bg-background border border-border rounded-md px-2 py-1 text-xs sm:text-sm text-foreground flex-1 sm:flex-none"
             data-testid="select-pipeline"
           >
             {pipelines.map((pipeline) => (
@@ -291,7 +291,7 @@ export const KanbanBoard: React.FC = () => {
             ))}
           </select>
           <Button
-            variant="outline"
+            variant="ghost"
             size="sm"
             onClick={() => {
               const nome = prompt("Nome do novo pipeline:");
@@ -303,13 +303,20 @@ export const KanbanBoard: React.FC = () => {
                 ]);
               }
             }}
+            className="text-xs whitespace-nowrap"
             data-testid="button-new-pipeline"
           >
-            <Plus className="w-4 h-4 mr-2" />
-            Novo Pipeline
+            <Plus className="w-3 h-3 mr-1" />
+            <span className="hidden sm:inline">Pipeline</span>
+            <span className="sm:hidden">+</span>
           </Button>
         </div>
-        <Button onClick={() => setDialogAberto(true)} data-testid="button-new-opportunity">
+        <Button 
+          onClick={() => setDialogAberto(true)} 
+          className="glass-button shine-effect w-full sm:w-auto"
+          size="sm"
+          data-testid="button-new-opportunity"
+        >
           <Plus className="w-4 h-4 mr-2" />
           Nova Oportunidade
         </Button>
@@ -317,7 +324,7 @@ export const KanbanBoard: React.FC = () => {
 
       <div className="flex-1 overflow-x-auto">
         <DragDropContext onDragEnd={aoTerminarArrasto}>
-          <div className="flex gap-4 p-4 min-w-max">
+          <div className="flex gap-3 p-3 min-w-max">
             {etapasComerciais.map((etapa) => {
               const items = oportunidades[etapa.id] || [];
               const IconeEtapa = etapa.icone;
@@ -340,26 +347,26 @@ export const KanbanBoard: React.FC = () => {
                 <Droppable key={etapa.id} droppableId={etapa.id}>
                   {(provided, snapshot) => (
                     <div
-                      className={`w-72 transition-all duration-200 ${snapshot.isDraggingOver
+                      className={`w-64 sm:w-72 lg:w-80 transition-all duration-200 ${snapshot.isDraggingOver
                         ? 'bg-primary/5 rounded-lg ring-2 ring-primary/20'
                         : ''
                         }`}
                     >
-                      <div className="glass-card rounded-lg p-3 mb-4">
-                        <div className="flex items-center justify-between mb-3">
-                          <div className="flex items-center gap-2">
+                      <div className="glass-card rounded-lg p-3 mb-3">
+                        <div className="flex items-center justify-between mb-2">
+                          <div className="flex items-center gap-2 min-w-0 flex-1">
                             <div
-                              className={`p-2 rounded-lg ${etapa.cor} bg-opacity-10`}
+                              className={`p-1.5 rounded-lg ${etapa.cor} bg-opacity-10 flex-shrink-0`}
                             >
                               <IconeEtapa
-                                className={`h-4 w-4 ${etapa.cor.replace("bg-", "text-")}`}
+                                className={`h-3.5 w-3.5 ${etapa.cor.replace("bg-", "text-")}`}
                               />
                             </div>
-                            <div>
-                              <h3 className="font-medium text-foreground text-sm">
+                            <div className="min-w-0 flex-1">
+                              <h3 className="font-medium text-foreground text-sm truncate">
                                 {etapa.nome}
                               </h3>
-                              <p className="text-xs text-muted-foreground">
+                              <p className="text-xs text-muted-foreground truncate">
                                 {totalColuna.toLocaleString("pt-BR", {
                                   style: "currency",
                                   currency: "BRL",
@@ -367,13 +374,13 @@ export const KanbanBoard: React.FC = () => {
                               </p>
                             </div>
                           </div>
-                          <div className="flex flex-col items-end gap-1">
+                          <div className="flex flex-col items-end gap-1 flex-shrink-0">
                             <Badge variant="secondary" className="text-xs">
                               {items.length}
                             </Badge>
                             {items.length > 0 && (
                               <div className="text-xs text-muted-foreground">
-                                Média: {mediaProb}%
+                                {mediaProb}%
                               </div>
                             )}
                           </div>
@@ -383,7 +390,7 @@ export const KanbanBoard: React.FC = () => {
                       <div 
                         ref={provided.innerRef}
                         {...provided.droppableProps}
-                        className="space-y-3 h-[calc(100vh-200px)] overflow-y-auto"
+                        className="space-y-2 h-[calc(100vh-160px)] overflow-y-auto"
                       >
                         {items.map((oportunidade, index) => (
                           <Draggable
@@ -411,24 +418,24 @@ export const KanbanBoard: React.FC = () => {
                                   {...prov.dragHandleProps}
                                   className="glass-card border-border/50 bg-card/80 backdrop-blur-sm"
                                 >
-                                  <CardHeader className="pb-2">
-                                    <div className="flex items-center justify-between">
-                                      <CardTitle className="text-sm font-medium truncate">
+                                  <CardHeader className="pb-1 px-3 pt-3">
+                                    <div className="flex items-start justify-between gap-2">
+                                      <CardTitle className="text-sm font-medium truncate flex-1 min-w-0">
                                         {oportunidade.titulo}
                                       </CardTitle>
-                                      <div className="flex gap-1">
+                                      <div className="flex gap-0.5 flex-shrink-0">
                                         <Button
                                           variant="ghost"
                                           size="icon"
-                                          className="h-6 w-6"
+                                          className="h-5 w-5"
                                           data-testid={`button-edit-opportunity-${oportunidade.id}`}
                                         >
-                                          <Edit2 className="w-3 h-3" />
+                                          <Edit2 className="w-2.5 h-2.5" />
                                         </Button>
                                         <Button
                                           variant="ghost"
                                           size="icon"
-                                          className="h-6 w-6"
+                                          className="h-5 w-5"
                                           onClick={(e) => {
                                             e.stopPropagation();
                                             excluirOportunidadeHandler(
@@ -437,20 +444,20 @@ export const KanbanBoard: React.FC = () => {
                                           }}
                                           data-testid={`button-delete-opportunity-${oportunidade.id}`}
                                         >
-                                          <Trash2 className="w-3 h-3 text-destructive" />
+                                          <Trash2 className="w-2.5 h-2.5 text-destructive" />
                                         </Button>
                                       </div>
                                     </div>
                                   </CardHeader>
-                                  <CardContent className="pt-0">
-                                    <p className="text-xs text-muted-foreground mb-3 line-clamp-2">
+                                  <CardContent className="pt-0 px-3 pb-3">
+                                    <p className="text-xs text-muted-foreground mb-2 line-clamp-2">
                                       {oportunidade.descricao}
                                     </p>
 
-                                    <div className="space-y-2">
+                                    <div className="space-y-1.5">
                                       <div className="flex items-center gap-2 text-xs">
-                                        <DollarSign className="w-3 h-3 text-emerald-500" />
-                                        <span className="font-medium text-emerald-600">
+                                        <DollarSign className="w-3 h-3 text-emerald-500 flex-shrink-0" />
+                                        <span className="font-medium text-emerald-600 truncate">
                                           {oportunidade.valor
                                             ? oportunidade.valor.toLocaleString(
                                               "pt-BR",
@@ -464,14 +471,14 @@ export const KanbanBoard: React.FC = () => {
                                       </div>
 
                                       <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                                        <User className="w-3 h-3" />
-                                        <span>{oportunidade.cliente.nome}</span>
+                                        <User className="w-3 h-3 flex-shrink-0" />
+                                        <span className="truncate">{oportunidade.cliente.nome}</span>
                                       </div>
 
                                       {oportunidade.dataPrevisao && (
                                         <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                                          <Calendar className="w-3 h-3" />
-                                          <span>
+                                          <Calendar className="w-3 h-3 flex-shrink-0" />
+                                          <span className="truncate">
                                             {new Date(
                                               oportunidade.dataPrevisao,
                                             ).toLocaleDateString("pt-BR")}
@@ -480,18 +487,18 @@ export const KanbanBoard: React.FC = () => {
                                       )}
                                     </div>
 
-                                    <div className="mt-3 pt-3 border-t border-border/50">
-                                      <div className="flex items-center justify-between">
+                                    <div className="mt-2 pt-2 border-t border-border/50">
+                                      <div className="flex items-center justify-between gap-2">
                                         <Badge
                                           variant="outline"
-                                          className="text-xs"
+                                          className="text-xs truncate max-w-[60%]"
                                         >
                                           {oportunidade.usuario.nome}
                                         </Badge>
                                         {!!oportunidade.probabilidade && (
                                           <Badge
                                             variant="secondary"
-                                            className="text-xs"
+                                            className="text-xs flex-shrink-0"
                                           >
                                             {oportunidade.probabilidade}%
                                           </Badge>
