@@ -347,12 +347,11 @@ export const KanbanBoard: React.FC = () => {
                 <Droppable key={etapa.id} droppableId={etapa.id}>
                   {(provided, snapshot) => (
                     <div
-                      // className={`w-64 sm:w-72 lg:w-80 transition-all duration-200 ${
-                      //   snapshot.isDraggingOver
-                      //     ? "bg-primary/5 rounded-lg ring-2 ring-primary/20"
-                      //     : ""
-                      // }`}
-                      className={`w-64 sm:w-72 lg:w-80 transition-all duration-200`}
+                      className={`w-64 sm:w-72 lg:w-80 transition-all duration-200 ${
+                        snapshot.isDraggingOver
+                          ? "bg-primary/5 rounded-lg ring-2 ring-primary/20"
+                          : ""
+                      }`}
                     >
                       <div className="glass-card rounded-lg p-3 mb-3">
                         <div className="flex items-center justify-between mb-2">
