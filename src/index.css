@@ -130,12 +130,28 @@
     transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
   }
 
-  .glass-card:hover {
+  .glass-card:hover:not([data-rfd-drag-handle-dragging="true"]) {
     border-color: rgba(255, 255, 255, 0.2);
     box-shadow:
       0 12px 40px 0 var(--glass-shadow),
       0 1px 0 0 var(--glass-inset) inset,
       0 0 0 1px rgba(255, 255, 255, 0.15) inset;
+  }
+
+  /* Override glass effects completely during drag */
+  .glass-card[data-rfd-drag-handle-dragging="true"] {
+    backdrop-filter: none !important;
+    -webkit-backdrop-filter: none !important;
+    background: rgba(255, 255, 255, 0.95) !important;
+    border: 1px solid rgba(0, 0, 0, 0.1) !important;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15) !important;
+    transform-origin: center !important;
+  }
+
+  .dark .glass-card[data-rfd-drag-handle-dragging="true"] {
+    background: rgba(30, 30, 30, 0.95) !important;
+    border: 1px solid rgba(255, 255, 255, 0.1) !important;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3) !important;
   }
 
   /* Light theme specific borders for Kanban cards */
@@ -219,6 +235,8 @@
 /* Drag and Drop improvements */
 [data-rfd-draggable-context-id] {
   cursor: grab !important;
+  position: relative !important;
+  z-index: 1;
 }
 
 [data-rfd-draggable-context-id]:active {
@@ -229,25 +247,44 @@
 [data-rfd-drag-handle-context-id] {
   touch-action: none;
   user-select: none;
+  position: relative;
 }
 
 /* Ensure draggable items maintain proper positioning during drag */
 [data-rfd-draggable-id] {
-  transform-origin: top left;
+  transform-origin: center;
+  position: relative !important;
 }
 
-/* Improve drag positioning accuracy */
-[data-rfd-draggable-context-id][data-rfd-draggable-context-id] {
-  pointer-events: auto;
-}
-
-/* Ensure smooth drag movement during active dragging */
-[data-rfd-drag-handle-dragging="true"] {
+/* Critical: Remove backdrop-filter during drag to prevent offset issues */
+[data-rfd-draggable-id][data-rfd-drag-handle-dragging="true"] {
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
   cursor: grabbing !important;
+  z-index: 9999 !important;
+  transform-origin: center !important;
 }
 
+/* Fix glass-card conflicts during drag */
+[data-rfd-draggable-id][data-rfd-drag-handle-dragging="true"] .glass-card {
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+  background: rgba(255, 255, 255, 0.9) !important;
+}
+
+.dark [data-rfd-draggable-id][data-rfd-drag-handle-dragging="true"] .glass-card {
+  background: rgba(0, 0, 0, 0.9) !important;
+}
 
 /* Ensure proper drag handle behavior */
 [data-rfd-drag-handle-dragging="true"] {
   cursor: grabbing !important;
+  position: relative !important;
+}
+
+/* Fix kanban card positioning during drag */
+.kanban-card[data-rfd-drag-handle-dragging="true"] {
+  transform-origin: center !important;
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
 }
