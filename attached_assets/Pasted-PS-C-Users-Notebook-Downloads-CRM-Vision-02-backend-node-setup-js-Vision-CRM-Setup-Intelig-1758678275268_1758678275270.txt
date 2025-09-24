@@ -1,0 +1,97 @@
+PS C:\Users\Notebook\Downloads\CRM-Vision 02\backend> node .\setup.js
+🚀 Vision CRM - Setup Inteligente v2.1
+=====================================
+🧠 Detectando e corrigindo problemas automaticamente...
+🔄 Tentativa 1/3
+🔌 Conectando como admin...
+✅ Admin conectado
+🔍 Validando PostgreSQL...
+✅ PostgreSQL detectado: 16.9,
+🗄️ Checando banco "visioncrm"...
+✅ Banco já existe
+👤 Checando usuário "visioncrm_user"...
+🔒 Senha do usuário atualizada
+✅ Permissões básicas concedidas
+🔌 Conectando ao banco "visioncrm"...
+✅ Conectado ao banco CRM
+🛡️ Ajustando permissões do schema public...
+✅ Permissões do schema ajustadas
+┌─────────────────────────────────────────────────────────┐
+│  Update available 6.15.0 -> 6.16.2                      │
+│  Run the following to update                            │
+│    npm i --save-dev prisma@latest                       │
+│    npm i @prisma/client@latest                          │
+└─────────────────────────────────────────────────────────┘
+
+✔ Generated Prisma Client (v6.15.0) to .\node_modules\@prisma\client in 72ms
+
+Start by importing your Prisma Client (See: https://pris.ly/d/importing-client)
+
+Tip: Want to turn off tips and other hints? https://pris.ly/tip-4-nohints
+
+🔄 Aplicando migrações com auto-correção...
+⚡ Executando: npx prisma migrate dev --name auto_migration
+Environment variables loaded from .env
+Prisma schema loaded from prisma\schema.prisma
+Datasource "db": PostgreSQL database "visioncrm", schema "public" at "localhost:5432"
+
+Already in sync, no schema change or pending migration was found.
+
+✔ Generated Prisma Client (v6.15.0) to .\node_modules\@prisma\client in 73ms
+
+
+✅ Migrações aplicadas com sucesso
+🔄 Regenerando client final...
+⚡ Executando: npx prisma generate
+Environment variables loaded from .env
+Prisma schema loaded from prisma\schema.prisma
+
+✔ Generated Prisma Client (v6.15.0) to .\node_modules\@prisma\client in 90ms
+
+Start by importing your Prisma Client (See: https://pris.ly/d/importing-client)
+
+Tip: Want to turn off tips and other hints? https://pris.ly/tip-4-nohints
+
+✅ Prisma configurado com sucesso
+🌱 Verificando dados iniciais...
+🗑️ Dados existentes detectados. Limpando para recriar...
+🧹 Limpando dados existentes...
+✅ Dados existentes removidos com sucesso
+🎯 Criando dados exemplo para Kanban...
+✅ Dados exemplo do Kanban e tarefas criados
+✅ Usuário criado com sucesso!
+📧 Email: admin@demo.com
+🔐 Senha: 123456
+🎯 Plano: PREMIUM (30 dias)
+📅 Trial válido até: 23/10/2025
+🌱 Executando seed completo com dados exemplares...
+⚡ Executando: node seed-data.js --reset
+✅ Seed completo executado com sucesso!
+📊 Dados criados:
+   🏢 3 Empresas
+   👥 3 Usuários (admin, vendedor, gerente)
+   👤 5 Clientes diversos
+   🎯 7 Oportunidades (Kanban completo)
+   📋 10 Tarefas com prazos
+🧪 Conexão ok - DB: visioncrm em 23/09/2025, 22:44:08
+📊 Tabelas encontradas: 6
+   - _prisma_migrations
+   - clientes
+   - empresas
+   - oportunidades
+   - tarefas
+   - usuarios
+✅ Todas as tabelas principais estão presentes
+✅ Sistema de trial configurado corretamente
+✅ Sistema Kanban: 7 oportunidades
+
+=====================================
+🎉 Setup concluído com sucesso!
+✨ Todos os problemas foram resolvidos automaticamente!
+
+🔗 Database URL: postgresql://visioncrm_user:VisionCRM2024!%40@localhost:5432/visioncrm?schema=public
+🚀 Para iniciar: npm run dev
+👤 Login demo: admin@demo.com / 123456
+📊 Kanban: Dados exemplo incluídos
+🌱 Dados completos: empresas, usuários, clientes, oportunidades e tarefas
+
