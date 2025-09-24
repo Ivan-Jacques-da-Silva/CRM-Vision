@@ -4,7 +4,7 @@ import { spawn } from 'child_process';
 
 // Set environment variables for proper configuration
 process.env.JWT_SECRET = process.env.JWT_SECRET || 'your-super-secret-jwt-key-change-in-production';
-process.env.FRONTEND_URL = process.env.FRONTEND_URL || 'http://0.0.0.0:5000';
+process.env.FRONTEND_URL = process.env.FRONTEND_URL || 'http://0.0.0.0:5050';
 
 console.log('🚀 Iniciando backend na porta 5050...');
 const backend = spawn('npm', ['run', 'dev'], { 

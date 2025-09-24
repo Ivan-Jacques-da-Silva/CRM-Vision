@@ -35,20 +35,20 @@ export function detectBrowserEnvironment(): EnvironmentConfig {
       hostname.includes('repl.co') || 
       hostname.includes('replit.dev')) {
     environment = 'replit';
-    // No Replit, trocar a porta para 5000 (backend)
-    const backendHostname = hostname.replace(/(-\d+)?\./, '-5000.');
+    // No Replit, trocar a porta para 5050 (backend)
+    const backendHostname = hostname.replace(/(-\d+)?\./, '-5050.');
     apiBaseUrl = `${protocol}//${backendHostname}/api`;
   }
   // Detectar desenvolvimento local
   else if (hostname === 'localhost' || hostname === '127.0.0.1') {
     environment = 'development';
-    apiBaseUrl = 'http://localhost:5000/api';
+    apiBaseUrl = 'http://localhost:5050/api';
   }
   // Detectar VPS/Produção
   else {
     environment = 'vps';
-    // Em VPS, assumir que o backend roda na porta 5000
-    apiBaseUrl = `${protocol}//${hostname}:5000/api`;
+    // Em VPS, assumir que o backend roda na porta 5050
+    apiBaseUrl = `${protocol}//${hostname}:5050/api`;
   }
   
   return {
@@ -90,13 +90,13 @@ export function detectServerEnvironment(): EnvironmentConfig {
   // Detectar desenvolvimento local
   else if (NODE_ENV === 'development') {
     environment = 'development';
-    backendPort = parseInt(process.env.PORT || '5000', 10);
+    backendPort = parseInt(process.env.PORT || '5050', 10);
     frontendUrl = process.env.FRONTEND_URL || 'http://localhost:5173';
   }
   // Detectar VPS/Produção
   else {
     environment = 'vps';
-    backendPort = parseInt(process.env.PORT || '5000', 10);
+    backendPort = parseInt(process.env.PORT || '5050', 10);
     frontendUrl = process.env.FRONTEND_URL || 'https://seu-dominio.com';
   }
   
