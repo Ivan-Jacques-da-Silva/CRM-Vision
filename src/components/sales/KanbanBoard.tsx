@@ -311,8 +311,8 @@ export const KanbanBoard: React.FC = () => {
             <span className="sm:hidden">+</span>
           </Button>
         </div>
-        <Button 
-          onClick={() => setDialogAberto(true)} 
+        <Button
+          onClick={() => setDialogAberto(true)}
           className="glass-button shine-effect w-full sm:w-auto"
           size="sm"
           data-testid="button-new-opportunity"
@@ -336,21 +336,22 @@ export const KanbanBoard: React.FC = () => {
               const mediaProb =
                 items.length > 0
                   ? Math.round(
-                    items.reduce(
-                      (total, item) => total + (item.probabilidade || 0),
-                      0,
-                    ) / items.length,
-                  )
+                      items.reduce(
+                        (total, item) => total + (item.probabilidade || 0),
+                        0,
+                      ) / items.length,
+                    )
                   : 0;
 
               return (
                 <Droppable key={etapa.id} droppableId={etapa.id}>
                   {(provided, snapshot) => (
                     <div
-                      className={`w-64 sm:w-72 lg:w-80 transition-all duration-200 ${snapshot.isDraggingOver
-                        ? 'bg-primary/5 rounded-lg ring-2 ring-primary/20'
-                        : ''
-                        }`}
+                      className={`w-64 sm:w-72 lg:w-80 transition-all duration-200 ${
+                        snapshot.isDraggingOver
+                          ? "bg-primary/5 rounded-lg ring-2 ring-primary/20"
+                          : ""
+                      }`}
                     >
                       <div className="glass-card rounded-lg p-3 mb-3">
                         <div className="flex items-center justify-between mb-2">
@@ -387,7 +388,7 @@ export const KanbanBoard: React.FC = () => {
                         </div>
                       </div>
 
-                      <div 
+                      <div
                         ref={provided.innerRef}
                         {...provided.droppableProps}
                         className="space-y-2 h-[calc(100vh-160px)] overflow-y-auto"
@@ -402,14 +403,15 @@ export const KanbanBoard: React.FC = () => {
                               <div
                                 ref={prov.innerRef}
                                 {...prov.draggableProps}
-                                className={`${snap.isDragging
-                                  ? "z-50 shadow-2xl cursor-grabbing"
-                                  : "cursor-grab hover:shadow-lg"
+                                className={`${
+                                  snap.isDragging
+                                    ? "z-50 shadow-2xl cursor-grabbing"
+                                    : "cursor-grab hover:shadow-lg"
                                 } transition-all duration-200`}
                                 style={{
                                   ...prov.draggableProps.style,
                                   transform: snap.isDragging
-                                    ? `${prov.draggableProps.style?.transform || ''} rotate(2deg)`
+                                    ? `${prov.draggableProps.style?.transform || ""} rotate(2deg)`
                                     : prov.draggableProps.style?.transform,
                                 }}
                                 data-testid={`card-opportunity-${oportunidade.id}`}
@@ -460,19 +462,21 @@ export const KanbanBoard: React.FC = () => {
                                         <span className="font-medium text-emerald-600 truncate">
                                           {oportunidade.valor
                                             ? oportunidade.valor.toLocaleString(
-                                              "pt-BR",
-                                              {
-                                                style: "currency",
-                                                currency: "BRL",
-                                              },
-                                            )
+                                                "pt-BR",
+                                                {
+                                                  style: "currency",
+                                                  currency: "BRL",
+                                                },
+                                              )
                                             : "R$ 0,00"}
                                         </span>
                                       </div>
 
                                       <div className="flex items-center gap-2 text-xs text-muted-foreground">
                                         <User className="w-3 h-3 flex-shrink-0" />
-                                        <span className="truncate">{oportunidade.cliente.nome}</span>
+                                        <span className="truncate">
+                                          {oportunidade.cliente.nome}
+                                        </span>
                                       </div>
 
                                       {oportunidade.dataPrevisao && (
