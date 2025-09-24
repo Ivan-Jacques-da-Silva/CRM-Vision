@@ -210,24 +210,53 @@
 
 /* Removed problematic interactive-element class that was blocking clicks */
 
-/* Drag and Drop styles for Kanban with dnd-kit */
-.sortable-item {
+/* Drag and Drop styles for Kanban */
+/* Allow drag library to handle transforms - DO NOT override transform for drag elements */
+
+[data-rfd-draggable-context-id] {
+  cursor: grab !important;
   touch-action: none;
+  user-select: none;
 }
 
-.sortable-item.dragging {
-  opacity: 0.5;
-  transform: rotate(2deg);
-  z-index: 999;
-  box-shadow: 0 8px 25px rgba(0, 0, 0, 0.25);
+[data-rfd-draggable-context-id]:hover {
+  cursor: grab !important;
 }
 
-.droppable-column {
-  min-height: 200px;
-  transition: background-color 0.2s ease;
+[data-rfd-drag-handle-context-id] {
+  touch-action: none;
+  user-select: none;
+  cursor: grab !important;
 }
 
-.droppable-column.drag-over {
-  background-color: rgba(59, 130, 246, 0.1);
-  border-radius: 8px;
+[data-rfd-drag-handle-context-id]:hover {
+  cursor: grab !important;
+}
+
+/* During drag - enhance visual feedback but preserve transforms */
+[data-rfd-drag-handle-dragging="true"] {
+  cursor: grabbing !important;
+  opacity: 0.8 !important;
+  z-index: 999 !important;
+  box-shadow: 0 8px 25px rgba(0, 0, 0, 0.25) !important;
+}
+
+[data-rfd-drag-handle-dragging="true"] * {
+  cursor: grabbing !important;
+  pointer-events: none !important;
+}
+
+/* Enhanced styling for dragged cards */
+[data-rfd-drag-handle-dragging="true"] .glass-card {
+  background: rgba(255, 255, 255, 0.95) !important;
+  border: 1px solid rgba(59, 130, 246, 0.5) !important;
+  backdrop-filter: blur(8px) !important;
+  -webkit-backdrop-filter: blur(8px) !important;
+}
+
+.dark [data-rfd-drag-handle-dragging="true"] .glass-card {
+  background: rgba(30, 30, 30, 0.95) !important;
+  border: 1px solid rgba(59, 130, 246, 0.5) !important;
+  backdrop-filter: blur(8px) !important;
+  -webkit-backdrop-filter: blur(8px) !important;
 }
