@@ -232,59 +232,33 @@
 
 /* Removed problematic interactive-element class that was blocking clicks */
 
-/* Drag and Drop improvements */
+/* Drag and Drop improvements - Minimal approach */
 [data-rfd-draggable-context-id] {
   cursor: grab !important;
-  position: relative !important;
-  z-index: 1;
 }
 
 [data-rfd-draggable-context-id]:active {
   cursor: grabbing !important;
 }
 
-/* Fix drag offset issues */
 [data-rfd-drag-handle-context-id] {
   touch-action: none;
   user-select: none;
-  position: relative;
 }
 
-/* Ensure draggable items maintain proper positioning during drag */
-[data-rfd-draggable-id] {
-  transform-origin: center;
-  position: relative !important;
-}
-
-/* Critical: Remove backdrop-filter during drag to prevent offset issues */
-[data-rfd-draggable-id][data-rfd-drag-handle-dragging="true"] {
-  backdrop-filter: none !important;
-  -webkit-backdrop-filter: none !important;
-  cursor: grabbing !important;
-  z-index: 9999 !important;
-  transform-origin: center !important;
-}
-
-/* Fix glass-card conflicts during drag */
-[data-rfd-draggable-id][data-rfd-drag-handle-dragging="true"] .glass-card {
-  backdrop-filter: none !important;
-  -webkit-backdrop-filter: none !important;
-  background: rgba(255, 255, 255, 0.9) !important;
-}
-
-.dark [data-rfd-draggable-id][data-rfd-drag-handle-dragging="true"] .glass-card {
-  background: rgba(0, 0, 0, 0.9) !important;
-}
-
-/* Ensure proper drag handle behavior */
+/* Only disable backdrop-filter during drag to prevent visual glitches */
 [data-rfd-drag-handle-dragging="true"] {
   cursor: grabbing !important;
-  position: relative !important;
 }
 
-/* Fix kanban card positioning during drag */
-.kanban-card[data-rfd-drag-handle-dragging="true"] {
-  transform-origin: center !important;
+[data-rfd-drag-handle-dragging="true"] .glass-card {
   backdrop-filter: none !important;
   -webkit-backdrop-filter: none !important;
+  background: rgba(255, 255, 255, 0.95) !important;
+  border: 1px solid rgba(0, 0, 0, 0.1) !important;
+}
+
+.dark [data-rfd-drag-handle-dragging="true"] .glass-card {
+  background: rgba(30, 30, 30, 0.95) !important;
+  border: 1px solid rgba(255, 255, 255, 0.1) !important;
 }
