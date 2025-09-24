@@ -54,8 +54,25 @@ import {
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
+import { buscarClientes, criarCliente, atualizarCliente, excluirCliente, ApiError } from '@/services/api';
 import { useToast } from '@/hooks/use-toast';
-import { buscarClientes, criarCliente, atualizarCliente, excluirCliente, ApiError, type Cliente } from '@/services/api';
+
+// Interface Cliente local
+interface Cliente {
+  id: string;
+  nome: string;
+  email: string;
+  telefone?: string;
+  nomeEmpresa?: string;
+  cargo?: string;
+  endereco?: string;
+  observacoes?: string;
+  status: 'ATIVO' | 'INATIVO' | 'LEAD' | 'CLIENTE';
+  fonte?: string;
+  tags: string[];
+  createdAt: string;
+  updatedAt: string;
+}
 
 export function Clients() {
   const { toast } = useToast();
