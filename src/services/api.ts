@@ -19,7 +19,7 @@ if (import.meta.env.DEV) {
  */
 class ApiError extends Error {
   status: number;
-  
+
   constructor(message: string, status: number) {
     super(message);
     this.status = status;
@@ -32,7 +32,7 @@ class ApiError extends Error {
  */
 async function apiRequest(endpoint: string, options: RequestInit = {}) {
   const url = `${API_BASE_URL}${endpoint}`;
-  
+
   const config: RequestInit = {
     headers: {
       'Content-Type': 'application/json',
@@ -52,20 +52,26 @@ async function apiRequest(endpoint: string, options: RequestInit = {}) {
 
   try {
     const response = await fetch(url, config);
-    
+
     if (!response.ok) {
+      if (response.status === 401) {
+        // Token inválido ou expirado, redirecionar para login
+        localStorage.removeItem('authToken');
+        window.location.href = '/login';
+        throw new Error('Sessão expirada. Redirecionando para login...');
+      }
       const errorData = await response.json().catch(() => ({}));
       throw new ApiError(
         errorData.erro || `HTTP ${response.status}: ${response.statusText}`,
         response.status
       );
     }
-    
+
     const contentType = response.headers.get('content-type');
     if (contentType && contentType.includes('application/json')) {
       return await response.json();
     }
-    
+
     return response;
   } catch (error) {
     if (error instanceof ApiError) {
@@ -94,11 +100,11 @@ export async function login(credentials: LoginCredentials) {
     method: 'POST',
     body: JSON.stringify(credentials),
   });
-  
+
   if (response.token) {
     localStorage.setItem('authToken', response.token);
   }
-  
+
   return response;
 }
 
@@ -107,11 +113,11 @@ export async function register(userData: RegisterData) {
     method: 'POST',
     body: JSON.stringify(userData),
   });
-  
+
   if (response.token) {
     localStorage.setItem('authToken', response.token);
   }
-  
+
   return response;
 }
 

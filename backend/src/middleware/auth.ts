@@ -14,7 +14,11 @@ export const authMiddleware = async (req: AuthenticatedRequest, res: Response, n
     const token = req.header('Authorization')?.replace('Bearer ', '');
 
     if (!token) {
-      return res.status(401).json({ message: 'Token de acesso requerido' });
+      console.log('❌ Token não fornecido:', req.headers['authorization']);
+      return res.status(401).json({
+        message: 'Token de acesso requerido',
+        error: 'MISSING_TOKEN'
+      });
     }
 
     const jwtSecret = process.env.JWT_SECRET || 'fallback-secret';
@@ -27,7 +31,11 @@ export const authMiddleware = async (req: AuthenticatedRequest, res: Response, n
     });
 
     if (!usuario) {
-      return res.status(401).json({ message: 'Token inválido' });
+      console.log('❌ Token inválido: Usuário não encontrado');
+      return res.status(401).json({
+        message: 'Token inválido',
+        error: 'INVALID_TOKEN'
+      });
     }
 
     // Calcular se o trial expirou
@@ -47,9 +55,19 @@ export const authMiddleware = async (req: AuthenticatedRequest, res: Response, n
       isTrialExpired
     };
     next();
-  } catch (error) {
-    console.error('Erro na autenticação:', error);
-    res.status(401).json({ message: 'Token inválido' });
+  } catch (error: any) {
+    console.error('Erro na autenticação:', error.message);
+    if (error.name === 'TokenExpiredError') {
+      res.status(401).json({
+        message: 'Token expirado',
+        error: 'TOKEN_EXPIRED'
+      });
+    } else {
+      res.status(401).json({
+        message: 'Token inválido',
+        error: 'INVALID_TOKEN'
+      });
+    }
   }
 };
 
