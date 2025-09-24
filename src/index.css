@@ -114,11 +114,11 @@
 }
 
 @layer components {
-  .card-hover {
+  /* .card-hover {
     @apply transition-all duration-300 hover:shadow-lg;
-  }
+  } */
 
-  .glass-card {
+  /* .glass-card {
     background: var(--glass-bg);
     backdrop-filter: blur(16px);
     -webkit-backdrop-filter: blur(16px);
@@ -133,7 +133,7 @@
   }
 
   /* Light theme specific borders for Kanban cards */
-  :root .glass-card {
+  /* :root .glass-card {
     border: 1px solid rgba(0, 0, 0, 0.1);
   }
 
@@ -142,20 +142,20 @@
   }
 
   /* Kanban column headers in light theme */
-  :root .kanban-header {
+  /* :root .kanban-header {
     border: 1px solid rgba(0, 0, 0, 0.08);
   }
 
   /* Card titles and content borders in light theme */
-  :root .kanban-card {
+  /* :root .kanban-card {
     border: 1px solid rgba(0, 0, 0, 0.12);
   }
 
   :root .kanban-card:hover {
     border-color: rgba(0, 0, 0, 0.18);
-  }
+  } */
 
-  .glass-button {
+  /* .glass-button {
     background: var(--glass-bg);
     backdrop-filter: blur(12px);
     -webkit-backdrop-filter: blur(12px);
@@ -166,7 +166,7 @@
 
   .glass-button:active {
     background: var(--active-glass);
-  }
+  } */
 
   .tag {
     @apply inline-flex items-center rounded-full px-3 py-1 text-xs font-medium glass-card;
@@ -247,7 +247,7 @@
 }
 
 /* Enhanced styling for dragged cards */
-[data-rfd-drag-handle-dragging="true"] .glass-card {
+/* [data-rfd-drag-handle-dragging="true"] .glass-card {
   background: rgba(255, 255, 255, 0.95) !important;
   border: 1px solid rgba(59, 130, 246, 0.5) !important;
   backdrop-filter: blur(8px) !important;
@@ -259,4 +259,4 @@
   border: 1px solid rgba(59, 130, 246, 0.5) !important;
   backdrop-filter: blur(8px) !important;
   -webkit-backdrop-filter: blur(8px) !important;
-}
+} */
