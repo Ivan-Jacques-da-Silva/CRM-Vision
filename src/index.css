@@ -239,24 +239,12 @@
   opacity: 0.8 !important;
   z-index: 999 !important;
   box-shadow: 0 8px 25px rgba(0, 0, 0, 0.25) !important;
-  /* IMPORTANTE: Não definir transform, position, left, top aqui */
+  /* IMPORTANTE: Não definir transform, position, left, top aqui - deixar a biblioteca controlar */
 }
 
-/* Garantir que não há interferência de outros estilos durante drag */
-[data-rfd-drag-handle-dragging="true"] * {
-  cursor: grabbing !important;
-  pointer-events: none !important;
-}
-
-/* Permitir que React DnD controle completamente o posicionamento */
+/* Permitir que a biblioteca de drag and drop controle completamente o posicionamento */
 [data-rfd-draggable-context-id] {
   position: relative !important;
-}
-
-/* Durante o drag, remover qualquer propriedade que interfira */
-[data-rfd-drag-handle-dragging="true"] {
-  position: fixed !important;
-  pointer-events: none !important;
 }
 
 /* Resetar estilos que podem interferir com o drag */
@@ -270,10 +258,7 @@
   background: rgba(0, 0, 0, 0.9) !important;
 }
 
-[data-rfd-drag-handle-dragging="true"] * {
-  cursor: grabbing !important;
-  pointer-events: none !important;
-}
+/* Removido regra global que interferia com o posicionamento da biblioteca */
 
 /* Enhanced styling for dragged cards */
 /* [data-rfd-drag-handle-dragging="true"] .glass-card {
