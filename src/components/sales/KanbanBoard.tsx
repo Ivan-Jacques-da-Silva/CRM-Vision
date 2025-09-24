@@ -398,10 +398,7 @@ export const KanbanBoard: React.FC = () => {
                                   ? "opacity-90"
                                   : "hover:shadow-lg transition-shadow duration-200"
                                   }`}
-                                style={{
-                                  ...prov.draggableProps.style,
-                                  transform: prov.draggableProps.style?.transform
-                                }}
+                                style={prov.draggableProps.style}
                                 data-testid={`card-opportunity-${oportunidade.id}`}
                               >
                                 <CardHeader className="pb-2">

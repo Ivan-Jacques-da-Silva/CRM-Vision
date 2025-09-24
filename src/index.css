@@ -210,9 +210,22 @@
 
 /* Removed problematic interactive-element class that was blocking clicks */
 
-/* Clean drag and drop - no positioning conflicts */
+/* Remove ALL transform, position and offset conflicts */
+* {
+  transform: none !important;
+}
+
+/* Only allow drag library to handle transforms */
 [data-rfd-draggable-context-id] {
   cursor: grab !important;
+  transform: none !important;
+  position: static !important;
+  left: auto !important;
+  top: auto !important;
+  right: auto !important;
+  bottom: auto !important;
+  margin: 0 !important;
+  padding: inherit !important;
 }
 
 [data-rfd-draggable-context-id]:active {
@@ -222,19 +235,37 @@
 [data-rfd-drag-handle-context-id] {
   touch-action: none;
   user-select: none;
+  transform: none !important;
+  position: static !important;
+  left: auto !important;
+  top: auto !important;
+  right: auto !important;
+  bottom: auto !important;
 }
 
-/* Minimal drag styling without positioning interference */
+/* Simple drag styling */
 [data-rfd-drag-handle-dragging="true"] {
   cursor: grabbing !important;
   opacity: 0.9 !important;
+  transform: none !important;
+  position: static !important;
+  left: auto !important;
+  top: auto !important;
+  right: auto !important;
+  bottom: auto !important;
+  margin: 0 !important;
 }
 
-/* Remove all backdrop filters and complex styling during drag */
 [data-rfd-drag-handle-dragging="true"] * {
   backdrop-filter: none !important;
   -webkit-backdrop-filter: none !important;
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2) !important;
+  transform: none !important;
+  position: static !important;
+  left: auto !important;
+  top: auto !important;
+  right: auto !important;
+  bottom: auto !important;
 }
 
 [data-rfd-drag-handle-dragging="true"] .glass-card {
@@ -242,9 +273,21 @@
   border: 1px solid rgba(0, 0, 0, 0.1) !important;
   backdrop-filter: none !important;
   -webkit-backdrop-filter: none !important;
+  transform: none !important;
+  position: static !important;
+  left: auto !important;
+  top: auto !important;
+  right: auto !important;
+  bottom: auto !important;
 }
 
 .dark [data-rfd-drag-handle-dragging="true"] .glass-card {
   background: rgba(30, 30, 30, 0.98) !important;
   border: 1px solid rgba(255, 255, 255, 0.1) !important;
+  transform: none !important;
+  position: static !important;
+  left: auto !important;
+  top: auto !important;
+  right: auto !important;
+  bottom: auto !important;
 }
