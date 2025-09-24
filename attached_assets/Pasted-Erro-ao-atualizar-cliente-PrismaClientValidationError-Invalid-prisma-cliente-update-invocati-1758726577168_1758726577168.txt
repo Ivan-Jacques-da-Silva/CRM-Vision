@@ -1,0 +1,49 @@
+Erro ao atualizar cliente: PrismaClientValidationError: 
+Invalid `prisma.cliente.update()` invocation in
+C:\Users\Notebook\Downloads\CRM-Vision 02\backend\src\routes\clientes.ts:106:52
+
+  103   return res.status(404).json({ message: 'Cliente não encontrado' });
+  104 }
+  105
+→ 106 const clienteAtualizado = await prisma.cliente.update({
+        where: {
+          id: "cmfy4acb00001vz44a6ch56yg"
+        },
+        data: {
+          id: "cmfy4acb00001vz44a6ch56yg",
+          nome: " Ivan Jacques",
+          email: "ivan@admin.com",
+          telefone: "5599191919191",
+          nomeEmpresa: "Panambi",
+          cargo: "CEO",
+          endereco: "",
+          observacoes: "Empresa MEI",
+          status: "ATIVO",
+          fonte: "",
+          tags: [],
+          createdAt: "2025-09-24T15:06:36.108Z",
+          updatedAt: "2025-09-24T15:06:36.108Z",
+          usuarioId: "user-admin",
+          ~~~~~~~~~
+          empresaId: "empresa-demo",
+          usuario: {
+            nome: "Admin Vision"
+          },
+          empresa: {
+            nome: "Vision CRM Demo Corp"
+          },
+      ?   oportunidades?: OportunidadeUpdateManyWithoutClienteNestedInput,
+      ?   tarefas?: TarefaUpdateManyWithoutClienteNestedInput
+        }
+      })
+
+Unknown argument `usuarioId`. Did you mean `usuario`? Available options are marked with ?.      
+    at throwValidationException (C:\Users\Notebook\Downloads\CRM-Vision 02\backend\node_modules\@prisma\client\src\runtime\core\errorRendering\throwValidationException.ts:45:9)
+    at ei.handleRequestError (C:\Users\Notebook\Downloads\CRM-Vision 02\backend\node_modules\@prisma\client\src\runtime\RequestHandler.ts:202:7)
+    at ei.handleAndLogRequestError (C:\Users\Notebook\Downloads\CRM-Vision 02\backend\node_modules\@prisma\client\src\runtime\RequestHandler.ts:174:12)
+    at ei.request (C:\Users\Notebook\Downloads\CRM-Vision 02\backend\node_modules\@prisma\client\src\runtime\RequestHandler.ts:143:12)
+    at async a (C:\Users\Notebook\Downloads\CRM-Vision 02\backend\node_modules\@prisma\client\src\runtime\getPrismaClient.ts:833:24)
+    at async <anonymous> (C:\Users\Notebook\Downloads\CRM-Vision 02\backend\src\routes\clientes.ts:106:31) {
+  clientVersion: '6.15.0'
+}
+2025-09-24T15:07:29.956Z - DELETE /api/clientes/cmfy4acb00001vz44a6ch56yg
