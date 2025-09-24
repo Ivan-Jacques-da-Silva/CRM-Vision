@@ -802,20 +802,44 @@ export function Clients() {
                 />
               </div>
             </div>
-            <div className="space-y-2">
-              <Label htmlFor="cargo">Cargo</Label>
-              <Input
-                id="cargo"
-                placeholder="Cargo na empresa"
-                value={newClientData.cargo}
-                onChange={(e) =>
-                  setNewClientData((prev) => ({
-                    ...prev,
-                    cargo: e.target.value,
-                  }))
-                }
-                data-testid="input-create-position"
-              />
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="cargo">Cargo</Label>
+                <Input
+                  id="cargo"
+                  placeholder="Cargo na empresa"
+                  value={newClientData.cargo}
+                  onChange={(e) =>
+                    setNewClientData((prev) => ({
+                      ...prev,
+                      cargo: e.target.value,
+                    }))
+                  }
+                  data-testid="input-create-position"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="status">Status</Label>
+                <Select
+                  value={newClientData.status}
+                  onValueChange={(value) =>
+                    setNewClientData((prev) => ({
+                      ...prev,
+                      status: value as Cliente["status"],
+                    }))
+                  }
+                >
+                  <SelectTrigger data-testid="select-create-status">
+                    <SelectValue placeholder="Selecione o status" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="ATIVO">Ativo</SelectItem>
+                    <SelectItem value="INATIVO">Inativo</SelectItem>
+                    <SelectItem value="LEAD">Lead</SelectItem>
+                    <SelectItem value="CLIENTE">Cliente</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
             </div>
             <div className="space-y-2">
               <Label htmlFor="observacoes">Observações</Label>
@@ -973,19 +997,42 @@ export function Clients() {
                   />
                 </div>
               </div>
-              <div className="space-y-2">
-                <Label htmlFor="edit-cargo">Cargo</Label>
-                <Input
-                  id="edit-cargo"
-                  placeholder="Cargo na empresa"
-                  value={selectedClient.cargo || ""}
-                  onChange={(e) =>
-                    setSelectedClient((prev) =>
-                      prev ? { ...prev, cargo: e.target.value } : null,
-                    )
-                  }
-                  data-testid="input-edit-position"
-                />
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label htmlFor="edit-cargo">Cargo</Label>
+                  <Input
+                    id="edit-cargo"
+                    placeholder="Cargo na empresa"
+                    value={selectedClient.cargo || ""}
+                    onChange={(e) =>
+                      setSelectedClient((prev) =>
+                        prev ? { ...prev, cargo: e.target.value } : null,
+                      )
+                    }
+                    data-testid="input-edit-position"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="edit-status">Status</Label>
+                  <Select
+                    value={selectedClient.status}
+                    onValueChange={(value) =>
+                      setSelectedClient((prev) =>
+                        prev ? { ...prev, status: value as Cliente["status"] } : null,
+                      )
+                    }
+                  >
+                    <SelectTrigger data-testid="select-edit-status">
+                      <SelectValue placeholder="Selecione o status" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="ATIVO">Ativo</SelectItem>
+                      <SelectItem value="INATIVO">Inativo</SelectItem>
+                      <SelectItem value="LEAD">Lead</SelectItem>
+                      <SelectItem value="CLIENTE">Cliente</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
               </div>
               <div className="space-y-2">
                 <Label htmlFor="edit-observacoes">Observações</Label>
