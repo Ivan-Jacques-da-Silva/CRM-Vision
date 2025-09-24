@@ -404,17 +404,21 @@ export const KanbanBoard: React.FC = () => {
                               <div
                                 ref={prov.innerRef}
                                 {...prov.draggableProps}
-                                className={`${
+                                className={
                                   snap.isDragging
-                                    ? "z-50 shadow-2xl cursor-grabbing"
-                                    : "cursor-grab hover:shadow-lg"
-                                } transition-all duration-200`}
+                                    ? "cursor-grabbing"
+                                    : "cursor-grab"
+                                }
                                 style={prov.draggableProps.style}
                                 data-testid={`card-opportunity-${oportunidade.id}`}
                               >
                                 <Card
                                   {...prov.dragHandleProps}
-                                  className="glass-card border-border/50 bg-card/80 backdrop-blur-sm"
+                                  className={
+                                    snap.isDragging
+                                      ? "border border-primary/50"
+                                      : "glass-card border-border/50 bg-card/80 backdrop-blur-sm"
+                                  }
                                 >
                                   <CardHeader className="pb-1 px-3 pt-3">
                                     <div className="flex items-start justify-between gap-2">

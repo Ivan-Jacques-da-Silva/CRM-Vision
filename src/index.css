@@ -242,6 +242,34 @@
   /* IMPORTANTE: Não definir transform, position, left, top aqui */
 }
 
+/* Garantir que não há interferência de outros estilos durante drag */
+[data-rfd-drag-handle-dragging="true"] * {
+  cursor: grabbing !important;
+  pointer-events: none !important;
+}
+
+/* Permitir que React DnD controle completamente o posicionamento */
+[data-rfd-draggable-context-id] {
+  position: relative !important;
+}
+
+/* Durante o drag, remover qualquer propriedade que interfira */
+[data-rfd-drag-handle-dragging="true"] {
+  position: fixed !important;
+  pointer-events: none !important;
+}
+
+/* Resetar estilos que podem interferir com o drag */
+.glass-card[data-rfd-drag-handle-dragging="true"] {
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+  background: rgba(255, 255, 255, 0.9) !important;
+}
+
+.dark .glass-card[data-rfd-drag-handle-dragging="true"] {
+  background: rgba(0, 0, 0, 0.9) !important;
+}
+
 [data-rfd-drag-handle-dragging="true"] * {
   cursor: grabbing !important;
   pointer-events: none !important;
