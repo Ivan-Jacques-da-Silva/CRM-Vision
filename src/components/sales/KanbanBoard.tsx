@@ -409,12 +409,7 @@ export const KanbanBoard: React.FC = () => {
                                     ? "z-50 shadow-2xl cursor-grabbing"
                                     : "cursor-grab hover:shadow-lg"
                                 } transition-all duration-200`}
-                                style={{
-                                  ...prov.draggableProps.style,
-                                  transform: snap.isDragging
-                                    ? `${prov.draggableProps.style?.transform || ""} rotate(2deg)`
-                                    : prov.draggableProps.style?.transform,
-                                }}
+                                style={prov.draggableProps.style}
                                 data-testid={`card-opportunity-${oportunidade.id}`}
                               >
                                 <Card

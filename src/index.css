@@ -239,6 +239,7 @@
   opacity: 0.8 !important;
   z-index: 999 !important;
   box-shadow: 0 8px 25px rgba(0, 0, 0, 0.25) !important;
+  /* IMPORTANTE: Não definir transform, position, left, top aqui */
 }
 
 [data-rfd-drag-handle-dragging="true"] * {
