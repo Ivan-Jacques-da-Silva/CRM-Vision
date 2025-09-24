@@ -20,7 +20,8 @@ import {
   PenLine,
   Phone,
   Mail,
-  ClipboardList
+  ClipboardList,
+  X
 } from "lucide-react";
 import { 
   Card, 
@@ -38,6 +39,18 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
@@ -66,6 +79,12 @@ export function Clients() {
     fonte: '',
     tags: [] as string[]
   });
+  const [newTag, setNewTag] = useState('');
+  const [editTag, setEditTag] = useState('');
+  
+  // Estados para filtros
+  const [statusFilter, setStatusFilter] = useState<string>('TODOS');
+  const [tagFilter, setTagFilter] = useState<string>('');
 
   // Carregar clientes na inicialização
   useEffect(() => {
@@ -89,11 +108,60 @@ export function Clients() {
     }
   };
   
-  const filteredClients = clients.filter(client => 
-    client.nome.toLowerCase().includes(searchQuery.toLowerCase()) || 
-    (client.nomeEmpresa && client.nomeEmpresa.toLowerCase().includes(searchQuery.toLowerCase())) ||
-    client.email.toLowerCase().includes(searchQuery.toLowerCase())
-  );
+  const filteredClients = clients.filter(client => {
+    // Filtro por busca de texto
+    const matchesSearch = client.nome.toLowerCase().includes(searchQuery.toLowerCase()) || 
+      (client.nomeEmpresa && client.nomeEmpresa.toLowerCase().includes(searchQuery.toLowerCase())) ||
+      client.email.toLowerCase().includes(searchQuery.toLowerCase());
+    
+    // Filtro por status
+    const matchesStatus = statusFilter === 'TODOS' || client.status === statusFilter;
+    
+    // Filtro por tag
+    const matchesTag = !tagFilter || (client.tags && client.tags.some(tag => 
+      tag.toLowerCase().includes(tagFilter.toLowerCase())
+    ));
+    
+    return matchesSearch && matchesStatus && matchesTag;
+  });
+
+  // Obter todas as tags únicas para o filtro
+  const allTags = Array.from(new Set(clients.flatMap(client => client.tags || []))).sort();
+
+  // Funções para gerenciar tags
+  const addNewTag = () => {
+    if (newTag.trim() && !newClientData.tags.includes(newTag.trim())) {
+      setNewClientData(prev => ({
+        ...prev,
+        tags: [...prev.tags, newTag.trim()]
+      }));
+      setNewTag('');
+    }
+  };
+
+  const removeNewTag = (tagToRemove: string) => {
+    setNewClientData(prev => ({
+      ...prev,
+      tags: prev.tags.filter(tag => tag !== tagToRemove)
+    }));
+  };
+
+  const addEditTag = () => {
+    if (editTag.trim() && selectedClient && !selectedClient.tags.includes(editTag.trim())) {
+      setSelectedClient(prev => prev ? {
+        ...prev,
+        tags: [...(prev.tags || []), editTag.trim()]
+      } : null);
+      setEditTag('');
+    }
+  };
+
+  const removeEditTag = (tagToRemove: string) => {
+    setSelectedClient(prev => prev ? {
+      ...prev,
+      tags: (prev.tags || []).filter(tag => tag !== tagToRemove)
+    } : null);
+  };
 
   const handleCreateClient = async () => {
     if (!newClientData.nome.trim()) {
@@ -130,6 +198,7 @@ export function Clients() {
         fonte: '',
         tags: []
       });
+      setNewTag(''); // Limpar tag temporária também
       setClientDialogOpen(false);
     } catch (error) {
       console.error('Erro ao criar cliente:', error);
@@ -280,7 +349,7 @@ export function Clients() {
       sanitizeCSVField(client.nomeEmpresa || ''),
       sanitizeCSVField(client.cargo || ''),
       sanitizeCSVField(client.status),
-      sanitizeCSVField(client.criadoEm ? new Date(client.criadoEm).toLocaleDateString('pt-BR') : '')
+      sanitizeCSVField(client.createdAt ? new Date(client.createdAt).toLocaleDateString('pt-BR') : '')
     ]);
 
     const csvContent = [
@@ -360,10 +429,70 @@ export function Clients() {
               />
             </div>
             <div className="flex gap-2">
-              <Button variant="outline" size="sm" data-testid="button-filters">
-                <Filter className="mr-2 h-4 w-4" />
-                Filtros
-              </Button>
+              <Popover>
+                <PopoverTrigger asChild>
+                  <Button variant="outline" size="sm" data-testid="button-filters">
+                    <Filter className="mr-2 h-4 w-4" />
+                    Filtros
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-80" align="end">
+                  <div className="space-y-4">
+                    <div className="space-y-2">
+                      <h4 className="font-medium leading-none">Filtros</h4>
+                      <p className="text-sm text-muted-foreground">
+                        Filtre a lista de clientes por status e tags.
+                      </p>
+                    </div>
+                    <div className="space-y-3">
+                      <div className="space-y-2">
+                        <Label>Status</Label>
+                        <Select value={statusFilter} onValueChange={setStatusFilter}>
+                          <SelectTrigger>
+                            <SelectValue placeholder="Selecione o status" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="TODOS">Todos</SelectItem>
+                            <SelectItem value="ATIVO">Ativo</SelectItem>
+                            <SelectItem value="INATIVO">Inativo</SelectItem>
+                            <SelectItem value="LEAD">Lead</SelectItem>
+                            <SelectItem value="CLIENTE">Cliente</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </div>
+                      <div className="space-y-2">
+                        <Label>Tags</Label>
+                        <Select value={tagFilter} onValueChange={setTagFilter}>
+                          <SelectTrigger>
+                            <SelectValue placeholder="Filtrar por tag" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="">Todas as tags</SelectItem>
+                            {allTags.map((tag) => (
+                              <SelectItem key={tag} value={tag}>
+                                {tag}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      </div>
+                      <div className="flex gap-2">
+                        <Button 
+                          size="sm" 
+                          variant="outline" 
+                          className="flex-1"
+                          onClick={() => {
+                            setStatusFilter('TODOS');
+                            setTagFilter('');
+                          }}
+                        >
+                          Limpar
+                        </Button>
+                      </div>
+                    </div>
+                  </div>
+                </PopoverContent>
+              </Popover>
               <Button variant="outline" size="sm" onClick={exportToCSV} data-testid="button-export-csv">
                 Exportar
               </Button>
@@ -403,7 +532,7 @@ export function Clients() {
                       </Badge>
                     </TableCell>
                     <TableCell>
-                      {client.criadoEm ? format(new Date(client.criadoEm), "dd/MM/yyyy", { locale: ptBR }) : 'N/A'}
+                      {client.createdAt ? format(new Date(client.createdAt), "dd/MM/yyyy", { locale: ptBR }) : 'N/A'}
                     </TableCell>
                     <TableCell>
                       <div className="flex flex-wrap gap-1">
@@ -558,6 +687,41 @@ export function Clients() {
                 data-testid="input-create-notes"
               />
             </div>
+            <div className="space-y-2">
+              <Label htmlFor="tags">Tags</Label>
+              <div className="space-y-2">
+                <div className="flex gap-2">
+                  <Input 
+                    id="tags"
+                    placeholder="Adicionar nova tag..."
+                    value={newTag}
+                    onChange={(e) => setNewTag(e.target.value)}
+                    onKeyPress={(e) => e.key === 'Enter' && (e.preventDefault(), addNewTag())}
+                    data-testid="input-create-tag"
+                  />
+                  <Button type="button" onClick={addNewTag} variant="outline" size="sm" data-testid="button-add-tag">
+                    <Plus className="h-4 w-4" />
+                  </Button>
+                </div>
+                {newClientData.tags.length > 0 && (
+                  <div className="flex flex-wrap gap-2">
+                    {newClientData.tags.map((tag, index) => (
+                      <Badge key={index} variant="secondary" className="flex items-center gap-1">
+                        {tag}
+                        <button
+                          type="button"
+                          onClick={() => removeNewTag(tag)}
+                          className="text-muted-foreground hover:text-destructive"
+                          data-testid={`button-remove-tag-${index}`}
+                        >
+                          <X className="h-3 w-3" />
+                        </button>
+                      </Badge>
+                    ))}
+                  </div>
+                )}
+              </div>
+            </div>
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setClientDialogOpen(false)} data-testid="button-cancel-create">
@@ -646,6 +810,41 @@ export function Clients() {
                   onChange={(e) => setSelectedClient(prev => prev ? { ...prev, observacoes: e.target.value } : null)}
                   data-testid="input-edit-notes"
                 />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="edit-tags">Tags</Label>
+                <div className="space-y-2">
+                  <div className="flex gap-2">
+                    <Input 
+                      id="edit-tags"
+                      placeholder="Adicionar nova tag..."
+                      value={editTag}
+                      onChange={(e) => setEditTag(e.target.value)}
+                      onKeyPress={(e) => e.key === 'Enter' && (e.preventDefault(), addEditTag())}
+                      data-testid="input-edit-tag"
+                    />
+                    <Button type="button" onClick={addEditTag} variant="outline" size="sm" data-testid="button-add-edit-tag">
+                      <Plus className="h-4 w-4" />
+                    </Button>
+                  </div>
+                  {(selectedClient.tags && selectedClient.tags.length > 0) && (
+                    <div className="flex flex-wrap gap-2">
+                      {selectedClient.tags.map((tag, index) => (
+                        <Badge key={index} variant="secondary" className="flex items-center gap-1">
+                          {tag}
+                          <button
+                            type="button"
+                            onClick={() => removeEditTag(tag)}
+                            className="text-muted-foreground hover:text-destructive"
+                            data-testid={`button-remove-edit-tag-${index}`}
+                          >
+                            <X className="h-3 w-3" />
+                          </button>
+                        </Badge>
+                      ))}
+                    </div>
+                  )}
+                </div>
               </div>
             </div>
           )}

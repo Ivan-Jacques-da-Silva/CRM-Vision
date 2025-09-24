@@ -103,9 +103,22 @@ router.put('/:id', requireActiveTrial, async (req: AuthenticatedRequest, res) =>
       return res.status(404).json({ message: 'Cliente não encontrado' });
     }
 
+    // Filtrar apenas campos editáveis (remover campos relacionais e IDs)
+    const allowedFields = [
+      'nome', 'email', 'telefone', 'nomeEmpresa', 'cargo', 
+      'endereco', 'observacoes', 'status', 'fonte', 'tags'
+    ];
+    
+    const filteredData: any = {};
+    for (const field of allowedFields) {
+      if (updates.hasOwnProperty(field)) {
+        filteredData[field] = updates[field];
+      }
+    }
+
     const clienteAtualizado = await prisma.cliente.update({
       where: { id },
-      data: updates
+      data: filteredData
     });
 
     res.json({ cliente: clienteAtualizado });

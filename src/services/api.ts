@@ -145,7 +145,7 @@ export interface Cliente {
   status: string;
   fonte?: string;
   tags: string[];
-  criadoEm: string;
+  createdAt: string;
 }
 
 export async function buscarClientes(params: any = {}) {
@@ -190,8 +190,8 @@ export interface Tarefa {
   clienteId?: string;
   oportunidadeId?: string;
   usuarioResponsavel?: string;
-  criadoEm: string;
-  atualizadoEm: string;
+  createdAt: string;
+  updatedAt: string;
 }
 
 export async function buscarTarefas(params: any = {}) {

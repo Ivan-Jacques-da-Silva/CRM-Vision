@@ -18,8 +18,8 @@ interface Tarefa {
   clienteId?: string;
   oportunidadeId?: string;
   usuarioResponsavel?: string;
-  criadoEm: string;
-  atualizadoEm: string;
+  createdAt: string;
+  updatedAt: string;
 }
 
 const Tasks = () => {
