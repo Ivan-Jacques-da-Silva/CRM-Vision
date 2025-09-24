@@ -282,6 +282,7 @@ export const KanbanBoard: React.FC = () => {
             value={pipelineAtivo}
             onChange={(e) => setPipelineAtivo(e.target.value)}
             className="bg-background border border-border rounded-lg px-3 py-2 text-foreground"
+            data-testid="select-pipeline"
           >
             {pipelines.map((pipeline) => (
               <option key={pipeline.id} value={pipeline.id}>
@@ -302,12 +303,13 @@ export const KanbanBoard: React.FC = () => {
                 ]);
               }
             }}
+            data-testid="button-new-pipeline"
           >
             <Plus className="w-4 h-4 mr-2" />
             Novo Pipeline
           </Button>
         </div>
-        <Button onClick={() => setDialogAberto(true)}>
+        <Button onClick={() => setDialogAberto(true)} data-testid="button-new-opportunity">
           <Plus className="w-4 h-4 mr-2" />
           Nova Oportunidade
         </Button>
@@ -393,12 +395,13 @@ export const KanbanBoard: React.FC = () => {
                                 {...prov.draggableProps}
                                 {...prov.dragHandleProps}
                                 className={`cursor-grab glass-card kanban-card transition-all duration-200 hover:shadow-md ${snap.isDragging
-                                  ? "shadow-2xl opacity-95 ring-2 ring-primary/20 !z-[9999] rotate-2 scale-105"
+                                  ? "shadow-2xl opacity-95 ring-2 ring-primary/20 !z-[9999]"
                                   : "hover:shadow-lg"
                                   }`}
                                 style={{
                                   ...prov.draggableProps.style,
                                 }}
+                                data-testid={`card-opportunity-${oportunidade.id}`}
                               >
                                 <CardHeader className="pb-2">
                                   <div className="flex items-center justify-between">
@@ -410,6 +413,7 @@ export const KanbanBoard: React.FC = () => {
                                         variant="ghost"
                                         size="icon"
                                         className="h-6 w-6"
+                                        data-testid={`button-edit-opportunity-${oportunidade.id}`}
                                       >
                                         <Edit2 className="w-3 h-3" />
                                       </Button>
@@ -423,6 +427,7 @@ export const KanbanBoard: React.FC = () => {
                                             oportunidade.id,
                                           );
                                         }}
+                                        data-testid={`button-delete-opportunity-${oportunidade.id}`}
                                       >
                                         <Trash2 className="w-3 h-3 text-destructive" />
                                       </Button>

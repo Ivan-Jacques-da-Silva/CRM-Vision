@@ -236,6 +236,16 @@
   transform-origin: top left;
 }
 
+/* Improve drag positioning accuracy */
+[data-rfd-draggable-context-id][data-rfd-draggable-context-id] {
+  pointer-events: auto;
+}
+
+/* Ensure smooth drag movement during active dragging */
+[data-rfd-drag-handle-dragging="true"] {
+  cursor: grabbing !important;
+}
+
 
 /* Ensure proper drag handle behavior */
 [data-rfd-drag-handle-dragging="true"] {
