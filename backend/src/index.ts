@@ -1,6 +1,6 @@
 import { config as dotenvConfig } from 'dotenv';
 import { resolve } from 'path';
-// Força restart do backend
+// Força restart do backend - v2
 import express from 'express';
 import cors from 'cors';
 import { PrismaClient } from '@prisma/client';
@@ -58,9 +58,9 @@ app.use(cors({
       }
     }
     
-    // Para desenvolvimento, ser mais permissivo com localhost
+    // Para desenvolvimento, ser mais permissivo com localhost e IPs internos
     if (environmentConfig.isDevelopment) {
-      const devPattern = /^https?:\/\/(localhost|127\.0\.0\.1|0\.0\.0\.0)(:\d+)?$/;
+      const devPattern = /^https?:\/\/(localhost|127\.0\.0\.1|0\.0\.0\.0|172\.\d+\.\d+\.\d+)(:\d+)?$/;
       if (devPattern.test(origin)) {
         return callback(null, true);
       }
