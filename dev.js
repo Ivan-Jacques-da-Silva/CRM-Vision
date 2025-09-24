@@ -7,15 +7,23 @@ process.env.JWT_SECRET = process.env.JWT_SECRET || 'your-super-secret-jwt-key-ch
 process.env.FRONTEND_URL = process.env.FRONTEND_URL || 'http://0.0.0.0:5000';
 
 console.log('🚀 Iniciando backend na porta 5050...');
+
+// Configurar ambiente do backend sem sobrescrever DATABASE_URL se estiver vazia
+const backendEnv = { 
+  ...process.env, 
+  PORT: '5050',
+  NODE_ENV: 'development'
+};
+
+// Só passa DATABASE_URL se ela não estiver vazia
+if (process.env.DATABASE_URL && process.env.DATABASE_URL.trim() !== '') {
+  backendEnv.DATABASE_URL = process.env.DATABASE_URL;
+}
+
 const backend = spawn('npm', ['run', 'dev'], { 
   cwd: './backend',
   stdio: 'inherit',
-  env: { 
-    ...process.env, 
-    PORT: '5050',
-    NODE_ENV: 'development',
-    DATABASE_URL: process.env.DATABASE_URL
-  }
+  env: backendEnv
 });
 
 // Aguardar o backend iniciar antes de iniciar o frontend

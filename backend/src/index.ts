@@ -1,5 +1,6 @@
 import { config as dotenvConfig } from 'dotenv';
 import { resolve } from 'path';
+// Força restart do backend
 import express from 'express';
 import cors from 'cors';
 import { PrismaClient } from '@prisma/client';
