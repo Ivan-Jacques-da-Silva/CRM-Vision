@@ -402,7 +402,7 @@ export const KanbanBoard: React.FC = () => {
                                 style={{
                                   ...prov.draggableProps.style,
                                   transform: snap.isDragging
-                                    ? `${prov.draggableProps.style?.transform || ''} rotate(2deg)`
+                                    ? `rotate(2deg)`
                                     : prov.draggableProps.style?.transform,
                                 }}
                                 data-testid={`card-opportunity-${oportunidade.id}`}
