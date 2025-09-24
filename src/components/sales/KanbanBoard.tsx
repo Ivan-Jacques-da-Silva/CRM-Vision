@@ -1,6 +1,27 @@
+
 import React, { useState, useEffect } from "react";
-import type { DropResult } from "@hello-pangea/dnd";
-import { DragDropContext, Droppable, Draggable } from "@hello-pangea/dnd";
+import {
+  DndContext,
+  closestCenter,
+  KeyboardSensor,
+  PointerSensor,
+  useSensor,
+  useSensors,
+  DragEndEvent,
+  DragOverlay,
+  DragStartEvent,
+  UniqueIdentifier,
+} from '@dnd-kit/core';
+import {
+  arrayMove,
+  SortableContext,
+  sortableKeyboardCoordinates,
+  verticalListSortingStrategy,
+} from '@dnd-kit/sortable';
+import {
+  useSortable,
+} from '@dnd-kit/sortable';
+import { CSS } from '@dnd-kit/utilities';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -67,13 +88,187 @@ const etapasComerciais = [
   { id: "PERDIDO", nome: "Perdido", icone: XCircle, cor: "bg-red-500" },
 ] as const;
 
+interface SortableCardProps {
+  oportunidade: Oportunidade;
+  onEdit: (id: string) => void;
+  onDelete: (id: string) => void;
+}
+
+function SortableCard({ oportunidade, onEdit, onDelete }: SortableCardProps) {
+  const {
+    attributes,
+    listeners,
+    setNodeRef,
+    transform,
+    transition,
+    isDragging,
+  } = useSortable({ id: oportunidade.id });
+
+  const style = {
+    transform: CSS.Transform.toString(transform),
+    transition,
+    opacity: isDragging ? 0.5 : 1,
+  };
+
+  return (
+    <div
+      ref={setNodeRef}
+      style={style}
+      {...attributes}
+      {...listeners}
+      className={`${isDragging ? "z-50 shadow-2xl cursor-grabbing rotate-2" : "cursor-grab hover:shadow-lg"} transition-all duration-200`}
+      data-testid={`card-opportunity-${oportunidade.id}`}
+    >
+      <Card className="glass-card border-border/50 bg-card/80 backdrop-blur-sm">
+        <CardHeader className="pb-2">
+          <div className="flex items-center justify-between">
+            <CardTitle className="text-sm font-medium truncate">
+              {oportunidade.titulo}
+            </CardTitle>
+            <div className="flex gap-1">
+              <Button
+                variant="ghost"
+                size="icon"
+                className="h-6 w-6"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onEdit(oportunidade.id);
+                }}
+                data-testid={`button-edit-opportunity-${oportunidade.id}`}
+              >
+                <Edit2 className="w-3 h-3" />
+              </Button>
+              <Button
+                variant="ghost"
+                size="icon"
+                className="h-6 w-6"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onDelete(oportunidade.id);
+                }}
+                data-testid={`button-delete-opportunity-${oportunidade.id}`}
+              >
+                <Trash2 className="w-3 h-3 text-destructive" />
+              </Button>
+            </div>
+          </div>
+        </CardHeader>
+        <CardContent className="pt-0">
+          <p className="text-xs text-muted-foreground mb-3 line-clamp-2">
+            {oportunidade.descricao}
+          </p>
+
+          <div className="space-y-2">
+            <div className="flex items-center gap-2 text-xs">
+              <DollarSign className="w-3 h-3 text-emerald-500" />
+              <span className="font-medium text-emerald-600">
+                {oportunidade.valor
+                  ? oportunidade.valor.toLocaleString("pt-BR", {
+                      style: "currency",
+                      currency: "BRL",
+                    })
+                  : "R$ 0,00"}
+              </span>
+            </div>
+
+            <div className="flex items-center gap-2 text-xs text-muted-foreground">
+              <User className="w-3 h-3" />
+              <span>{oportunidade.cliente.nome}</span>
+            </div>
+
+            {oportunidade.dataPrevisao && (
+              <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                <Calendar className="w-3 h-3" />
+                <span>
+                  {new Date(oportunidade.dataPrevisao).toLocaleDateString("pt-BR")}
+                </span>
+              </div>
+            )}
+          </div>
+
+          <div className="mt-3 pt-3 border-t border-border/50">
+            <div className="flex items-center justify-between">
+              <Badge variant="outline" className="text-xs">
+                {oportunidade.usuario.nome}
+              </Badge>
+              {!!oportunidade.probabilidade && (
+                <Badge variant="secondary" className="text-xs">
+                  {oportunidade.probabilidade}%
+                </Badge>
+              )}
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+    </div>
+  );
+}
+
+interface DroppableColumnProps {
+  etapa: typeof etapasComerciais[0];
+  oportunidades: Oportunidade[];
+  onEdit: (id: string) => void;
+  onDelete: (id: string) => void;
+}
+
+function DroppableColumn({ etapa, oportunidades, onEdit, onDelete }: DroppableColumnProps) {
+  const IconeEtapa = etapa.icone;
+  const totalColuna = oportunidades.reduce((total, item) => total + (item.valor || 0), 0);
+  const mediaProb = oportunidades.length > 0
+    ? Math.round(oportunidades.reduce((total, item) => total + (item.probabilidade || 0), 0) / oportunidades.length)
+    : 0;
+
+  return (
+    <div className="w-72">
+      <div className="glass-card rounded-lg p-3 mb-4">
+        <div className="flex items-center justify-between mb-3">
+          <div className="flex items-center gap-2">
+            <div className={`p-2 rounded-lg ${etapa.cor} bg-opacity-10`}>
+              <IconeEtapa className={`h-4 w-4 ${etapa.cor.replace("bg-", "text-")}`} />
+            </div>
+            <div>
+              <h3 className="font-medium text-foreground text-sm">{etapa.nome}</h3>
+              <p className="text-xs text-muted-foreground">
+                {totalColuna.toLocaleString("pt-BR", {
+                  style: "currency",
+                  currency: "BRL",
+                })}
+              </p>
+            </div>
+          </div>
+          <div className="flex flex-col items-end gap-1">
+            <Badge variant="secondary" className="text-xs">
+              {oportunidades.length}
+            </Badge>
+            {oportunidades.length > 0 && (
+              <div className="text-xs text-muted-foreground">Média: {mediaProb}%</div>
+            )}
+          </div>
+        </div>
+      </div>
+
+      <SortableContext items={oportunidades.map(o => o.id)} strategy={verticalListSortingStrategy}>
+        <div className="space-y-3 h-[calc(100vh-200px)] overflow-y-auto">
+          {oportunidades.map((oportunidade) => (
+            <SortableCard
+              key={oportunidade.id}
+              oportunidade={oportunidade}
+              onEdit={onEdit}
+              onDelete={onDelete}
+            />
+          ))}
+        </div>
+      </SortableContext>
+    </div>
+  );
+}
+
 export const KanbanBoard: React.FC = () => {
-  const [oportunidades, setOportunidades] = useState<
-    Record<string, Oportunidade[]>
-  >({});
+  const [oportunidades, setOportunidades] = useState<Record<string, Oportunidade[]>>({});
   const [dialogAberto, setDialogAberto] = useState(false);
   const [clientes, setClientes] = useState<Cliente[]>([]);
   const [loading, setLoading] = useState(true);
+  const [activeId, setActiveId] = useState<UniqueIdentifier | null>(null);
   const [pipelines, setPipelines] = useState([
     { id: "1", nome: "Pipeline Principal", ativo: true },
     { id: "2", nome: "Pipeline Produtos", ativo: false },
@@ -82,9 +277,15 @@ export const KanbanBoard: React.FC = () => {
   const [pipelineAtivo, setPipelineAtivo] = useState("1");
   const { toast } = useToast();
 
+  const sensors = useSensors(
+    useSensor(PointerSensor),
+    useSensor(KeyboardSensor, {
+      coordinateGetter: sortableKeyboardCoordinates,
+    })
+  );
+
   useEffect(() => {
     carregarDados();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const carregarDados = async () => {
@@ -97,9 +298,7 @@ export const KanbanBoard: React.FC = () => {
       ]);
 
       const oportunidadesOrganizadas: Record<string, Oportunidade[]> = {};
-      etapasComerciais.forEach(
-        (etapa) => (oportunidadesOrganizadas[etapa.id] = []),
-      );
+      etapasComerciais.forEach((etapa) => (oportunidadesOrganizadas[etapa.id] = []));
 
       // Card de exemplo (não persiste)
       oportunidadesOrganizadas["LEAD"] = [
@@ -110,9 +309,7 @@ export const KanbanBoard: React.FC = () => {
           valor: 15000,
           status: "LEAD",
           probabilidade: 20,
-          dataPrevisao: new Date(
-            Date.now() + 30 * 24 * 60 * 60 * 1000,
-          ).toISOString(),
+          dataPrevisao: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString(),
           cliente: {
             id: "cliente-exemplo",
             nome: "Cliente Exemplo",
@@ -139,8 +336,7 @@ export const KanbanBoard: React.FC = () => {
             cliente: {
               id: o.cliente?.id ? String(o.cliente.id) : "",
               nome: o.cliente?.nome || "Cliente não identificado",
-              nomeEmpresa:
-                o.cliente?.nomeEmpresa || o.cliente?.empresa?.nome || "",
+              nomeEmpresa: o.cliente?.nomeEmpresa || o.cliente?.empresa?.nome || "",
               empresa: o.cliente?.empresa,
             },
             usuario: {
@@ -156,12 +352,11 @@ export const KanbanBoard: React.FC = () => {
 
       setOportunidades(oportunidadesOrganizadas);
 
-      // aceitar tanto array quanto { clientes: [] }
       const listaClientes = Array.isArray(clientesData)
         ? clientesData
         : Array.isArray(clientesData?.clientes)
-          ? clientesData.clientes
-          : [];
+        ? clientesData.clientes
+        : [];
       setClientes(listaClientes);
     } catch (error) {
       console.error("Erro ao carregar dados:", error);
@@ -175,63 +370,92 @@ export const KanbanBoard: React.FC = () => {
     }
   };
 
-  const aoTerminarArrasto = async (resultado: DropResult) => {
-    const { destination, source, draggableId } = resultado;
-    if (!destination) return;
-    if (
-      destination.droppableId === source.droppableId &&
-      destination.index === source.index
-    )
-      return;
+  const handleDragStart = (event: DragStartEvent) => {
+    setActiveId(event.active.id);
+  };
 
-    try {
-      const origemLista = oportunidades[source.droppableId] || [];
-      const oportunidadeArrastada = origemLista.find(
-        (op) => op.id === draggableId,
-      );
-      if (!oportunidadeArrastada) return;
+  const handleDragEnd = async (event: DragEndEvent) => {
+    const { active, over } = event;
+    setActiveId(null);
 
-      const novasOportunidades = structuredClone(oportunidades);
+    if (!over) return;
 
-      // remover da coluna origem
-      novasOportunidades[source.droppableId] = (
-        novasOportunidades[source.droppableId] || []
-      ).filter((op) => op.id !== draggableId);
+    const activeId = active.id;
+    const overId = over.id;
 
-      // inserir na coluna destino na posição
-      const destinoLista = [
-        ...(novasOportunidades[destination.droppableId] || []),
-      ];
-      const oportunidadeAtualizada: Oportunidade = {
-        ...oportunidadeArrastada,
-        status: destination.droppableId,
-      };
-      destinoLista.splice(destination.index, 0, oportunidadeAtualizada);
-      novasOportunidades[destination.droppableId] = destinoLista;
+    // Find the source column
+    let sourceColumn = '';
+    let targetColumn = '';
+    
+    for (const [columnId, items] of Object.entries(oportunidades)) {
+      if (items.find(item => item.id === activeId)) {
+        sourceColumn = columnId;
+        break;
+      }
+    }
 
-      setOportunidades(novasOportunidades);
+    // Determine target column
+    if (etapasComerciais.find(etapa => etapa.id === overId)) {
+      targetColumn = overId as string;
+    } else {
+      // Find which column the overId belongs to
+      for (const [columnId, items] of Object.entries(oportunidades)) {
+        if (items.find(item => item.id === overId)) {
+          targetColumn = columnId;
+          break;
+        }
+      }
+    }
 
-      if (draggableId !== "exemplo-1") {
-        await atualizarOportunidade(draggableId, {
-          status: destination.droppableId,
+    if (!sourceColumn || !targetColumn) return;
+
+    const sourceItems = oportunidades[sourceColumn];
+    const targetItems = oportunidades[targetColumn];
+    const activeItem = sourceItems.find(item => item.id === activeId);
+
+    if (!activeItem) return;
+
+    if (sourceColumn === targetColumn) {
+      // Reordering within the same column
+      const oldIndex = sourceItems.findIndex(item => item.id === activeId);
+      const newIndex = sourceItems.findIndex(item => item.id === overId);
+      
+      if (oldIndex !== newIndex) {
+        const newItems = arrayMove(sourceItems, oldIndex, newIndex);
+        setOportunidades(prev => ({
+          ...prev,
+          [sourceColumn]: newItems,
+        }));
+      }
+    } else {
+      // Moving between columns
+      try {
+        const updatedItem = { ...activeItem, status: targetColumn };
+        
+        setOportunidades(prev => ({
+          ...prev,
+          [sourceColumn]: prev[sourceColumn].filter(item => item.id !== activeId),
+          [targetColumn]: [...prev[targetColumn], updatedItem],
+        }));
+
+        if (activeId !== "exemplo-1") {
+          await atualizarOportunidade(activeId as string, { status: targetColumn });
+        }
+
+        const etapaDestino = etapasComerciais.find(e => e.id === targetColumn);
+        toast({
+          title: "Oportunidade movida",
+          description: `Movida para "${etapaDestino?.nome}" com sucesso`,
+        });
+      } catch (error) {
+        console.error("Erro ao mover oportunidade:", error);
+        await carregarDados();
+        toast({
+          title: "Erro",
+          description: "Erro ao mover oportunidade. Tente novamente.",
+          variant: "destructive",
         });
       }
-
-      const etapaDestino = etapasComerciais.find(
-        (e) => e.id === destination.droppableId,
-      );
-      toast({
-        title: "Oportunidade movida",
-        description: `Movida para "${etapaDestino?.nome}" com sucesso`,
-      });
-    } catch (error) {
-      console.error("Erro ao mover oportunidade:", error);
-      await carregarDados();
-      toast({
-        title: "Erro",
-        description: "Erro ao mover oportunidade. Tente novamente.",
-        variant: "destructive",
-      });
     }
   };
 
@@ -260,18 +484,24 @@ export const KanbanBoard: React.FC = () => {
     }
   };
 
+  const handleEdit = (id: string) => {
+    // Implementar lógica de edição
+    console.log("Editar oportunidade:", id);
+  };
+
   if (loading) {
     return (
       <div className="flex items-center justify-center h-64">
         <div className="text-center">
           <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto" />
-          <p className="mt-2 text-muted-foreground">
-            Carregando oportunidades...
-          </p>
+          <p className="mt-2 text-muted-foreground">Carregando oportunidades...</p>
         </div>
       </div>
     );
   }
+
+  const activeItem = activeId ? 
+    Object.values(oportunidades).flat().find(item => item.id === activeId) : null;
 
   return (
     <div className="h-full flex flex-col">
@@ -297,10 +527,7 @@ export const KanbanBoard: React.FC = () => {
               const nome = prompt("Nome do novo pipeline:");
               if (nome) {
                 const novoId = String(pipelines.length + 1);
-                setPipelines([
-                  ...pipelines,
-                  { id: novoId, nome, ativo: false },
-                ]);
+                setPipelines([...pipelines, { id: novoId, nome, ativo: false }]);
               }
             }}
             data-testid="button-new-pipeline"
@@ -316,203 +543,34 @@ export const KanbanBoard: React.FC = () => {
       </div>
 
       <div className="flex-1 overflow-x-auto">
-        <DragDropContext onDragEnd={aoTerminarArrasto}>
+        <DndContext
+          sensors={sensors}
+          collisionDetection={closestCenter}
+          onDragStart={handleDragStart}
+          onDragEnd={handleDragEnd}
+        >
           <div className="flex gap-4 p-4 min-w-max">
-            {etapasComerciais.map((etapa) => {
-              const items = oportunidades[etapa.id] || [];
-              const IconeEtapa = etapa.icone;
-
-              const totalColuna = items.reduce(
-                (total, item) => total + (item.valor || 0),
-                0,
-              );
-              const mediaProb =
-                items.length > 0
-                  ? Math.round(
-                    items.reduce(
-                      (total, item) => total + (item.probabilidade || 0),
-                      0,
-                    ) / items.length,
-                  )
-                  : 0;
-
-              return (
-                <Droppable key={etapa.id} droppableId={etapa.id}>
-                  {(provided, snapshot) => (
-                    <div
-                      className={`w-72 transition-all duration-200 ${snapshot.isDraggingOver
-                        ? 'bg-primary/5 rounded-lg ring-2 ring-primary/20'
-                        : ''
-                        }`}
-                    >
-                      <div className="glass-card rounded-lg p-3 mb-4">
-                        <div className="flex items-center justify-between mb-3">
-                          <div className="flex items-center gap-2">
-                            <div
-                              className={`p-2 rounded-lg ${etapa.cor} bg-opacity-10`}
-                            >
-                              <IconeEtapa
-                                className={`h-4 w-4 ${etapa.cor.replace("bg-", "text-")}`}
-                              />
-                            </div>
-                            <div>
-                              <h3 className="font-medium text-foreground text-sm">
-                                {etapa.nome}
-                              </h3>
-                              <p className="text-xs text-muted-foreground">
-                                {totalColuna.toLocaleString("pt-BR", {
-                                  style: "currency",
-                                  currency: "BRL",
-                                })}
-                              </p>
-                            </div>
-                          </div>
-                          <div className="flex flex-col items-end gap-1">
-                            <Badge variant="secondary" className="text-xs">
-                              {items.length}
-                            </Badge>
-                            {items.length > 0 && (
-                              <div className="text-xs text-muted-foreground">
-                                Média: {mediaProb}%
-                              </div>
-                            )}
-                          </div>
-                        </div>
-                      </div>
-
-                      <div 
-                        ref={provided.innerRef}
-                        {...provided.droppableProps}
-                        className="space-y-3 h-[calc(100vh-200px)] overflow-y-auto"
-                      >
-                        {items.map((oportunidade, index) => (
-                          <Draggable
-                            key={oportunidade.id}
-                            draggableId={oportunidade.id}
-                            index={index}
-                          >
-                            {(prov, snap) => (
-                              <div
-                                ref={prov.innerRef}
-                                {...prov.draggableProps}
-                                className={`${snap.isDragging
-                                  ? "z-50 shadow-2xl cursor-grabbing"
-                                  : "cursor-grab hover:shadow-lg"
-                                } transition-all duration-200`}
-                                style={{
-                                  ...prov.draggableProps.style,
-                                  transform: snap.isDragging
-                                    ? `${prov.draggableProps.style?.transform || ''} rotate(2deg)`
-                                    : prov.draggableProps.style?.transform,
-                                }}
-                                data-testid={`card-opportunity-${oportunidade.id}`}
-                              >
-                                <Card
-                                  {...prov.dragHandleProps}
-                                  className="glass-card border-border/50 bg-card/80 backdrop-blur-sm"
-                                >
-                                  <CardHeader className="pb-2">
-                                    <div className="flex items-center justify-between">
-                                      <CardTitle className="text-sm font-medium truncate">
-                                        {oportunidade.titulo}
-                                      </CardTitle>
-                                      <div className="flex gap-1">
-                                        <Button
-                                          variant="ghost"
-                                          size="icon"
-                                          className="h-6 w-6"
-                                          data-testid={`button-edit-opportunity-${oportunidade.id}`}
-                                        >
-                                          <Edit2 className="w-3 h-3" />
-                                        </Button>
-                                        <Button
-                                          variant="ghost"
-                                          size="icon"
-                                          className="h-6 w-6"
-                                          onClick={(e) => {
-                                            e.stopPropagation();
-                                            excluirOportunidadeHandler(
-                                              oportunidade.id,
-                                            );
-                                          }}
-                                          data-testid={`button-delete-opportunity-${oportunidade.id}`}
-                                        >
-                                          <Trash2 className="w-3 h-3 text-destructive" />
-                                        </Button>
-                                      </div>
-                                    </div>
-                                  </CardHeader>
-                                  <CardContent className="pt-0">
-                                    <p className="text-xs text-muted-foreground mb-3 line-clamp-2">
-                                      {oportunidade.descricao}
-                                    </p>
-
-                                    <div className="space-y-2">
-                                      <div className="flex items-center gap-2 text-xs">
-                                        <DollarSign className="w-3 h-3 text-emerald-500" />
-                                        <span className="font-medium text-emerald-600">
-                                          {oportunidade.valor
-                                            ? oportunidade.valor.toLocaleString(
-                                              "pt-BR",
-                                              {
-                                                style: "currency",
-                                                currency: "BRL",
-                                              },
-                                            )
-                                            : "R$ 0,00"}
-                                        </span>
-                                      </div>
-
-                                      <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                                        <User className="w-3 h-3" />
-                                        <span>{oportunidade.cliente.nome}</span>
-                                      </div>
-
-                                      {oportunidade.dataPrevisao && (
-                                        <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                                          <Calendar className="w-3 h-3" />
-                                          <span>
-                                            {new Date(
-                                              oportunidade.dataPrevisao,
-                                            ).toLocaleDateString("pt-BR")}
-                                          </span>
-                                        </div>
-                                      )}
-                                    </div>
-
-                                    <div className="mt-3 pt-3 border-t border-border/50">
-                                      <div className="flex items-center justify-between">
-                                        <Badge
-                                          variant="outline"
-                                          className="text-xs"
-                                        >
-                                          {oportunidade.usuario.nome}
-                                        </Badge>
-                                        {!!oportunidade.probabilidade && (
-                                          <Badge
-                                            variant="secondary"
-                                            className="text-xs"
-                                          >
-                                            {oportunidade.probabilidade}%
-                                          </Badge>
-                                        )}
-                                      </div>
-                                    </div>
-                                  </CardContent>
-                                </Card>
-                              </div>
-                            )}
-                          </Draggable>
-                        ))}
-                        {provided.placeholder}
-                      </div>
-                    </div>
-                  )}
-                </Droppable>
-              );
-            })}
+            {etapasComerciais.map((etapa) => (
+              <DroppableColumn
+                key={etapa.id}
+                etapa={etapa}
+                oportunidades={oportunidades[etapa.id] || []}
+                onEdit={handleEdit}
+                onDelete={excluirOportunidadeHandler}
+              />
+            ))}
           </div>
-        </DragDropContext>
+
+          <DragOverlay>
+            {activeItem ? (
+              <SortableCard
+                oportunidade={activeItem}
+                onEdit={handleEdit}
+                onDelete={excluirOportunidadeHandler}
+              />
+            ) : null}
+          </DragOverlay>
+        </DndContext>
       </div>
 
       <NewOpportunityDialog
