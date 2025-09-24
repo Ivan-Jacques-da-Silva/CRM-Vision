@@ -340,8 +340,6 @@ export const KanbanBoard: React.FC = () => {
                 <Droppable key={etapa.id} droppableId={etapa.id}>
                   {(provided, snapshot) => (
                     <div
-                      ref={provided.innerRef}
-                      {...provided.droppableProps}
                       className={`w-72 transition-all duration-200 ${snapshot.isDraggingOver
                         ? 'bg-primary/5 rounded-lg ring-2 ring-primary/20'
                         : ''
@@ -382,7 +380,11 @@ export const KanbanBoard: React.FC = () => {
                         </div>
                       </div>
 
-                      <div className="space-y-3 h-[calc(100vh-200px)] overflow-y-auto">
+                      <div 
+                        ref={provided.innerRef}
+                        {...provided.droppableProps}
+                        className="space-y-3 h-[calc(100vh-200px)] overflow-y-auto"
+                      >
                         {items.map((oportunidade, index) => (
                           <Draggable
                             key={oportunidade.id}
@@ -390,106 +392,115 @@ export const KanbanBoard: React.FC = () => {
                             index={index}
                           >
                             {(prov, snap) => (
-                              <Card
+                              <div
                                 ref={prov.innerRef}
                                 {...prov.draggableProps}
-                                {...prov.dragHandleProps}
-                                className={`cursor-grab glass-card kanban-card ${snap.isDragging
-                                  ? "opacity-90"
-                                  : "hover:shadow-lg transition-shadow duration-200"
-                                  }`}
-                                style={prov.draggableProps.style}
+                                className={`${snap.isDragging
+                                  ? "z-50 shadow-2xl cursor-grabbing"
+                                  : "cursor-grab hover:shadow-lg"
+                                } transition-all duration-200`}
+                                style={{
+                                  ...prov.draggableProps.style,
+                                  transform: snap.isDragging
+                                    ? `${prov.draggableProps.style?.transform || ''} rotate(2deg)`
+                                    : prov.draggableProps.style?.transform,
+                                }}
                                 data-testid={`card-opportunity-${oportunidade.id}`}
                               >
-                                <CardHeader className="pb-2">
-                                  <div className="flex items-center justify-between">
-                                    <CardTitle className="text-sm font-medium truncate">
-                                      {oportunidade.titulo}
-                                    </CardTitle>
-                                    <div className="flex gap-1">
-                                      <Button
-                                        variant="ghost"
-                                        size="icon"
-                                        className="h-6 w-6"
-                                        data-testid={`button-edit-opportunity-${oportunidade.id}`}
-                                      >
-                                        <Edit2 className="w-3 h-3" />
-                                      </Button>
-                                      <Button
-                                        variant="ghost"
-                                        size="icon"
-                                        className="h-6 w-6"
-                                        onClick={(e) => {
-                                          e.stopPropagation();
-                                          excluirOportunidadeHandler(
-                                            oportunidade.id,
-                                          );
-                                        }}
-                                        data-testid={`button-delete-opportunity-${oportunidade.id}`}
-                                      >
-                                        <Trash2 className="w-3 h-3 text-destructive" />
-                                      </Button>
+                                <Card
+                                  {...prov.dragHandleProps}
+                                  className="glass-card border-border/50 bg-card/80 backdrop-blur-sm"
+                                >
+                                  <CardHeader className="pb-2">
+                                    <div className="flex items-center justify-between">
+                                      <CardTitle className="text-sm font-medium truncate">
+                                        {oportunidade.titulo}
+                                      </CardTitle>
+                                      <div className="flex gap-1">
+                                        <Button
+                                          variant="ghost"
+                                          size="icon"
+                                          className="h-6 w-6"
+                                          data-testid={`button-edit-opportunity-${oportunidade.id}`}
+                                        >
+                                          <Edit2 className="w-3 h-3" />
+                                        </Button>
+                                        <Button
+                                          variant="ghost"
+                                          size="icon"
+                                          className="h-6 w-6"
+                                          onClick={(e) => {
+                                            e.stopPropagation();
+                                            excluirOportunidadeHandler(
+                                              oportunidade.id,
+                                            );
+                                          }}
+                                          data-testid={`button-delete-opportunity-${oportunidade.id}`}
+                                        >
+                                          <Trash2 className="w-3 h-3 text-destructive" />
+                                        </Button>
+                                      </div>
                                     </div>
-                                  </div>
-                                </CardHeader>
-                                <CardContent className="pt-0">
-                                  <p className="text-xs text-muted-foreground mb-3 line-clamp-2">
-                                    {oportunidade.descricao}
-                                  </p>
+                                  </CardHeader>
+                                  <CardContent className="pt-0">
+                                    <p className="text-xs text-muted-foreground mb-3 line-clamp-2">
+                                      {oportunidade.descricao}
+                                    </p>
 
-                                  <div className="space-y-2">
-                                    <div className="flex items-center gap-2 text-xs">
-                                      <DollarSign className="w-3 h-3 text-emerald-500" />
-                                      <span className="font-medium text-emerald-600">
-                                        {oportunidade.valor
-                                          ? oportunidade.valor.toLocaleString(
-                                            "pt-BR",
-                                            {
-                                              style: "currency",
-                                              currency: "BRL",
-                                            },
-                                          )
-                                          : "R$ 0,00"}
-                                      </span>
-                                    </div>
-
-                                    <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                                      <User className="w-3 h-3" />
-                                      <span>{oportunidade.cliente.nome}</span>
-                                    </div>
-
-                                    {oportunidade.dataPrevisao && (
-                                      <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                                        <Calendar className="w-3 h-3" />
-                                        <span>
-                                          {new Date(
-                                            oportunidade.dataPrevisao,
-                                          ).toLocaleDateString("pt-BR")}
+                                    <div className="space-y-2">
+                                      <div className="flex items-center gap-2 text-xs">
+                                        <DollarSign className="w-3 h-3 text-emerald-500" />
+                                        <span className="font-medium text-emerald-600">
+                                          {oportunidade.valor
+                                            ? oportunidade.valor.toLocaleString(
+                                              "pt-BR",
+                                              {
+                                                style: "currency",
+                                                currency: "BRL",
+                                              },
+                                            )
+                                            : "R$ 0,00"}
                                         </span>
                                       </div>
-                                    )}
-                                  </div>
 
-                                  <div className="mt-3 pt-3 border-t border-border/50">
-                                    <div className="flex items-center justify-between">
-                                      <Badge
-                                        variant="outline"
-                                        className="text-xs"
-                                      >
-                                        {oportunidade.usuario.nome}
-                                      </Badge>
-                                      {!!oportunidade.probabilidade && (
-                                        <Badge
-                                          variant="secondary"
-                                          className="text-xs"
-                                        >
-                                          {oportunidade.probabilidade}%
-                                        </Badge>
+                                      <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                                        <User className="w-3 h-3" />
+                                        <span>{oportunidade.cliente.nome}</span>
+                                      </div>
+
+                                      {oportunidade.dataPrevisao && (
+                                        <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                                          <Calendar className="w-3 h-3" />
+                                          <span>
+                                            {new Date(
+                                              oportunidade.dataPrevisao,
+                                            ).toLocaleDateString("pt-BR")}
+                                          </span>
+                                        </div>
                                       )}
                                     </div>
-                                  </div>
-                                </CardContent>
-                              </Card>
+
+                                    <div className="mt-3 pt-3 border-t border-border/50">
+                                      <div className="flex items-center justify-between">
+                                        <Badge
+                                          variant="outline"
+                                          className="text-xs"
+                                        >
+                                          {oportunidade.usuario.nome}
+                                        </Badge>
+                                        {!!oportunidade.probabilidade && (
+                                          <Badge
+                                            variant="secondary"
+                                            className="text-xs"
+                                          >
+                                            {oportunidade.probabilidade}%
+                                          </Badge>
+                                        )}
+                                      </div>
+                                    </div>
+                                  </CardContent>
+                                </Card>
+                              </div>
                             )}
                           </Draggable>
                         ))}
