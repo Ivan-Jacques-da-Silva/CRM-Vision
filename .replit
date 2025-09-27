@@ -134,4 +134,5 @@ outputType = "webview"
 
 [agent]
 expertMode = true
+
 integrations = ["javascript_database:1.0.0"]
