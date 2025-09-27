@@ -354,7 +354,7 @@ export const KanbanBoard: React.FC = () => {
                       // }`}
                       className={`w-64 sm:w-72 lg:w-80 transition-all duration-200`}
                     >
-                      <div className="glass-card rounded-lg p-3 mb-3">
+                      <div className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg p-3 mb-3 shadow-sm">
                         <div className="flex items-center justify-between mb-2">
                           <div className="flex items-center gap-2 min-w-0 flex-1">
                             <div
@@ -392,7 +392,7 @@ export const KanbanBoard: React.FC = () => {
                       <div
                         ref={provided.innerRef}
                         {...provided.droppableProps}
-                        className="space-y-2 h-[calc(100vh-160px)] overflow-y-auto"
+                        className="space-y-3 min-h-[200px] h-[calc(100vh-160px)] overflow-y-auto p-2 rounded-lg bg-gray-50 dark:bg-gray-900/50"
                       >
                         {items.map((oportunidade, index) => (
                           <Draggable
@@ -416,8 +416,8 @@ export const KanbanBoard: React.FC = () => {
                                 <Card
                                   className={
                                     snap.isDragging
-                                      ? "border border-primary/50 pointer-events-none"
-                                      : "glass-card border-border/50 bg-card/80 backdrop-blur-sm"
+                                      ? "border border-primary/50 pointer-events-none bg-white dark:bg-gray-800"
+                                      : "bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 shadow-sm hover:shadow-md transition-shadow"
                                   }
                                 >
                                   <CardHeader className="pb-1 px-3 pt-3">

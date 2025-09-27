@@ -6,7 +6,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { criarOportunidade, buscarDadosUsuario } from '@/services/api';
+import { criarOportunidade } from '@/services/api';
 import { useToast } from '@/hooks/use-toast';
 
 interface Cliente {
@@ -37,31 +37,17 @@ export const NewOpportunityDialog: React.FC<NewOpportunityDialogProps> = ({
     dataFechamentoEsperada: ''
   });
   const [loading, setLoading] = useState(false);
-  const [usuarioAtual, setUsuarioAtual] = useState<any>(null);
   const { toast } = useToast();
 
-  useEffect(() => {
-    if (open) {
-      carregarUsuario();
-    }
-  }, [open]);
-
-  const carregarUsuario = async () => {
-    try {
-      const userData = await buscarDadosUsuario();
-      setUsuarioAtual(userData);
-    } catch (error) {
-      console.error('Erro ao carregar dados do usuário:', error);
-    }
-  };
+  // Dados do usuário são obtidos automaticamente pela autenticação
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    if (!usuarioAtual) {
+    if (!formData.titulo || !formData.clienteId) {
       toast({
         title: "Erro",
-        description: "Dados do usuário não carregados",
+        description: "Título e cliente são obrigatórios",
         variant: "destructive",
       });
       return;
@@ -75,10 +61,9 @@ export const NewOpportunityDialog: React.FC<NewOpportunityDialogProps> = ({
         descricao: formData.descricao,
         valor: parseFloat(formData.valor) || 0,
         clienteId: formData.clienteId,
-        responsavelId: usuarioAtual.id,
-        estagio: 'LEAD',
-        probabilidade: parseInt(formData.probabilidade) || 0,
-        dataFechamentoEsperada: formData.dataFechamentoEsperada || null
+        status: 'LEAD',
+        prioridade: 'MEDIA',
+        dataPrevisao: formData.dataFechamentoEsperada || null
       };
 
       await criarOportunidade(oportunidadeData);

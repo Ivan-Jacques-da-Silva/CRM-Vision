@@ -13,29 +13,34 @@ router.use(checkTrialStatus);
 // GET /api/oportunidades - Listar oportunidades (filtrado por empresa)
 router.get('/', authMiddleware, async (req: AuthenticatedRequest, res) => {
   try {
-    // Buscar apenas oportunidades de clientes da mesma empresa
+    // Buscar apenas oportunidades do usuário atual
     const whereClause: any = {
       usuarioId: req.userId!
     };
 
+    // Se o usuário tem empresa, filtrar também por empresa
     if (req.user?.empresaId) {
-      whereClause.cliente = {
-        empresaId: req.user.empresaId
-      };
+      whereClause.empresaId = req.user.empresaId;
     }
 
     const oportunidades = await prisma.oportunidade.findMany({
       where: whereClause,
       include: {
         cliente: {
-          include: { 
+          select: {
+            id: true,
+            nome: true,
+            nomeEmpresa: true,
             empresa: { 
               select: { nome: true } 
-            } 
+            }
           }
         },
         usuario: { 
-          select: { nome: true } 
+          select: { 
+            id: true,
+            nome: true 
+          } 
         }
       },
       orderBy: { createdAt: 'desc' }
