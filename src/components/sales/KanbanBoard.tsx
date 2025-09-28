@@ -25,6 +25,23 @@ import {
   buscarClientes,
 } from "@/services/api";
 import { useToast } from "@/hooks/use-toast";
+import { createPortal } from "react-dom";
+
+/* --------- Portal para evitar offset durante o arrasto --------- */
+const PortalArrasto: React.FC<{ ativo: boolean; children: React.ReactNode }> = ({
+  ativo,
+  children,
+}) => {
+  if (!ativo) return <>{children}</>;
+  if (typeof document === "undefined") return null;
+  let el = document.getElementById("dnd-portal");
+  if (!el) {
+    el = document.createElement("div");
+    el.id = "dnd-portal";
+    document.body.appendChild(el);
+  }
+  return createPortal(children, el);
+};
 
 interface Oportunidade {
   id: string;
@@ -57,20 +74,13 @@ const etapasComerciais = [
   { id: "LEAD", nome: "Lead Recebido", icone: Users, cor: "bg-blue-500" },
   { id: "QUALIFICADO", nome: "Qualificado", icone: User, cor: "bg-indigo-500" },
   { id: "PROPOSTA", nome: "Proposta", icone: Send, cor: "bg-purple-500" },
-  {
-    id: "NEGOCIACAO",
-    nome: "Negociação",
-    icone: Handshake,
-    cor: "bg-yellow-500",
-  },
+  { id: "NEGOCIACAO", nome: "Negociação", icone: Handshake, cor: "bg-yellow-500" },
   { id: "GANHO", nome: "Ganho", icone: Trophy, cor: "bg-green-500" },
   { id: "PERDIDO", nome: "Perdido", icone: XCircle, cor: "bg-red-500" },
 ] as const;
 
 export const KanbanBoard: React.FC = () => {
-  const [oportunidades, setOportunidades] = useState<
-    Record<string, Oportunidade[]>
-  >({});
+  const [oportunidades, setOportunidades] = useState<Record<string, Oportunidade[]>>({});
   const [dialogAberto, setDialogAberto] = useState(false);
   const [clientes, setClientes] = useState<Cliente[]>([]);
   const [loading, setLoading] = useState(true);
@@ -97,9 +107,7 @@ export const KanbanBoard: React.FC = () => {
       ]);
 
       const oportunidadesOrganizadas: Record<string, Oportunidade[]> = {};
-      etapasComerciais.forEach(
-        (etapa) => (oportunidadesOrganizadas[etapa.id] = []),
-      );
+      etapasComerciais.forEach((etapa) => (oportunidadesOrganizadas[etapa.id] = []));
 
       // Card de exemplo (não persiste)
       oportunidadesOrganizadas["LEAD"] = [
@@ -110,9 +118,7 @@ export const KanbanBoard: React.FC = () => {
           valor: 15000,
           status: "LEAD",
           probabilidade: 20,
-          dataPrevisao: new Date(
-            Date.now() + 30 * 24 * 60 * 60 * 1000,
-          ).toISOString(),
+          dataPrevisao: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString(),
           cliente: {
             id: "cliente-exemplo",
             nome: "Cliente Exemplo",
@@ -139,8 +145,7 @@ export const KanbanBoard: React.FC = () => {
             cliente: {
               id: o.cliente?.id ? String(o.cliente.id) : "",
               nome: o.cliente?.nome || "Cliente não identificado",
-              nomeEmpresa:
-                o.cliente?.nomeEmpresa || o.cliente?.empresa?.nome || "",
+              nomeEmpresa: o.cliente?.nomeEmpresa || o.cliente?.empresa?.nome || "",
               empresa: o.cliente?.empresa,
             },
             usuario: {
@@ -156,12 +161,11 @@ export const KanbanBoard: React.FC = () => {
 
       setOportunidades(oportunidadesOrganizadas);
 
-      // aceitar tanto array quanto { clientes: [] }
       const listaClientes = Array.isArray(clientesData)
         ? clientesData
         : Array.isArray(clientesData?.clientes)
-          ? clientesData.clientes
-          : [];
+        ? clientesData.clientes
+        : [];
       setClientes(listaClientes);
     } catch (error) {
       console.error("Erro ao carregar dados:", error);
@@ -178,30 +182,22 @@ export const KanbanBoard: React.FC = () => {
   const aoTerminarArrasto = async (resultado: DropResult) => {
     const { destination, source, draggableId } = resultado;
     if (!destination) return;
-    if (
-      destination.droppableId === source.droppableId &&
-      destination.index === source.index
-    )
-      return;
+    if (destination.droppableId === source.droppableId && destination.index === source.index) return;
 
     try {
       const origemLista = oportunidades[source.droppableId] || [];
-      const oportunidadeArrastada = origemLista.find(
-        (op) => op.id === draggableId,
-      );
+      const oportunidadeArrastada = origemLista.find((op) => op.id === draggableId);
       if (!oportunidadeArrastada) return;
 
       const novasOportunidades = structuredClone(oportunidades);
 
       // remover da coluna origem
-      novasOportunidades[source.droppableId] = (
-        novasOportunidades[source.droppableId] || []
-      ).filter((op) => op.id !== draggableId);
+      novasOportunidades[source.droppableId] = (novasOportunidades[source.droppableId] || []).filter(
+        (op) => op.id !== draggableId
+      );
 
       // inserir na coluna destino na posição
-      const destinoLista = [
-        ...(novasOportunidades[destination.droppableId] || []),
-      ];
+      const destinoLista = [...(novasOportunidades[destination.droppableId] || [])];
       const oportunidadeAtualizada: Oportunidade = {
         ...oportunidadeArrastada,
         status: destination.droppableId,
@@ -212,14 +208,10 @@ export const KanbanBoard: React.FC = () => {
       setOportunidades(novasOportunidades);
 
       if (draggableId !== "exemplo-1") {
-        await atualizarOportunidade(draggableId, {
-          status: destination.droppableId,
-        });
+        await atualizarOportunidade(draggableId, { status: destination.droppableId });
       }
 
-      const etapaDestino = etapasComerciais.find(
-        (e) => e.id === destination.droppableId,
-      );
+      const etapaDestino = etapasComerciais.find((e) => e.id === destination.droppableId);
       toast({
         title: "Oportunidade movida",
         description: `Movida para "${etapaDestino?.nome}" com sucesso`,
@@ -265,9 +257,7 @@ export const KanbanBoard: React.FC = () => {
       <div className="flex items-center justify-center h-64">
         <div className="text-center">
           <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto" />
-          <p className="mt-2 text-muted-foreground">
-            Carregando oportunidades...
-          </p>
+          <p className="mt-2 text-muted-foreground">Carregando oportunidades...</p>
         </div>
       </div>
     );
@@ -275,7 +265,7 @@ export const KanbanBoard: React.FC = () => {
 
   return (
     <div className="h-full flex flex-col">
-      {/* Compact Pipeline Selector */}
+      {/* Cabeçalho compacto do pipeline */}
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between p-3 border-b border-border/50 bg-muted/20 gap-3 sm:gap-0">
         <div className="flex items-center gap-2 sm:gap-3 w-full sm:w-auto">
           <select
@@ -297,10 +287,7 @@ export const KanbanBoard: React.FC = () => {
               const nome = prompt("Nome do novo pipeline:");
               if (nome) {
                 const novoId = String(pipelines.length + 1);
-                setPipelines([
-                  ...pipelines,
-                  { id: novoId, nome, ativo: false },
-                ]);
+                setPipelines([...pipelines, { id: novoId, nome, ativo: false }]);
               }
             }}
             className="text-xs whitespace-nowrap"
@@ -329,50 +316,26 @@ export const KanbanBoard: React.FC = () => {
               const items = oportunidades[etapa.id] || [];
               const IconeEtapa = etapa.icone;
 
-              const totalColuna = items.reduce(
-                (total, item) => total + (item.valor || 0),
-                0,
-              );
+              const totalColuna = items.reduce((total, item) => total + (item.valor || 0), 0);
               const mediaProb =
                 items.length > 0
-                  ? Math.round(
-                    items.reduce(
-                      (total, item) => total + (item.probabilidade || 0),
-                      0,
-                    ) / items.length,
-                  )
+                  ? Math.round(items.reduce((total, item) => total + (item.probabilidade || 0), 0) / items.length)
                   : 0;
 
               return (
                 <Droppable key={etapa.id} droppableId={etapa.id}>
-                  {(provided, snapshot) => (
-                    <div
-                      // className={`w-64 sm:w-72 lg:w-80 transition-all duration-200 ${
-                      //   snapshot.isDraggingOver
-                      //     ? "bg-primary/5 rounded-lg ring-2 ring-primary/20"
-                      //     : ""
-                      // }`}
-                      className={`w-64 sm:w-72 lg:w-80 transition-all duration-200`}
-                    >
+                  {(provided) => (
+                    <div className="w-64 sm:w-72 lg:w-80 transition-all duration-200">
                       <div className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg p-3 mb-3 shadow-sm">
                         <div className="flex items-center justify-between mb-2">
                           <div className="flex items-center gap-2 min-w-0 flex-1">
-                            <div
-                              className={`p-1.5 rounded-lg ${etapa.cor} bg-opacity-10 flex-shrink-0`}
-                            >
-                              <IconeEtapa
-                                className={`h-3.5 w-3.5 ${etapa.cor.replace("bg-", "text-")}`}
-                              />
+                            <div className={`p-1.5 rounded-lg ${etapa.cor} bg-opacity-10 flex-shrink-0`}>
+                              <IconeEtapa className={`h-3.5 w-3.5 ${etapa.cor.replace("bg-", "text-")}`} />
                             </div>
                             <div className="min-w-0 flex-1">
-                              <h3 className="font-medium text-foreground text-sm truncate">
-                                {etapa.nome}
-                              </h3>
+                              <h3 className="font-medium text-foreground text-sm truncate">{etapa.nome}</h3>
                               <p className="text-xs text-muted-foreground truncate">
-                                {totalColuna.toLocaleString("pt-BR", {
-                                  style: "currency",
-                                  currency: "BRL",
-                                })}
+                                {totalColuna.toLocaleString("pt-BR", { style: "currency", currency: "BRL" })}
                               </p>
                             </div>
                           </div>
@@ -380,11 +343,7 @@ export const KanbanBoard: React.FC = () => {
                             <Badge variant="secondary" className="text-xs">
                               {items.length}
                             </Badge>
-                            {items.length > 0 && (
-                              <div className="text-xs text-muted-foreground">
-                                {mediaProb}%
-                              </div>
-                            )}
+                            {items.length > 0 && <div className="text-xs text-muted-foreground">{mediaProb}%</div>}
                           </div>
                         </div>
                       </div>
@@ -394,138 +353,124 @@ export const KanbanBoard: React.FC = () => {
                         {...provided.droppableProps}
                         className="space-y-3 min-h-[200px] h-[calc(100vh-160px)] overflow-y-auto p-2 rounded-lg bg-gray-50 dark:bg-gray-900/50 relative"
                       >
-
                         {items.map((oportunidade, index) => (
-                          <Draggable
-                            key={oportunidade.id}
-                            draggableId={oportunidade.id}
-                            index={index}
-                          >
-                            {(prov, snap) => (
-                              <div
-                                ref={prov.innerRef}
-                                {...prov.draggableProps}
-                                {...prov.dragHandleProps}
-                                className={
-                                  snap.isDragging
-                                    ? "cursor-grabbing opacity-80 z-[999] shadow-2xl"
-                                    : "cursor-grab"
-                                }
-                                style={{ ...prov.draggableProps.style }}
-
-                                data-testid={`card-opportunity-${oportunidade.id}`}
-                              >
-                                <Card
-                                  className={
+                          <Draggable key={oportunidade.id} draggableId={oportunidade.id} index={index}>
+                            {(prov, snap) => {
+                              const Conteudo = (
+                                <div
+                                  ref={prov.innerRef}
+                                  {...prov.draggableProps}
+                                  {...prov.dragHandleProps}
+                                  className={`${
                                     snap.isDragging
-                                      ? "border border-primary/50 pointer-events-none bg-white dark:bg-gray-800"
-                                      : "bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 shadow-sm hover:shadow-md transition-shadow"
-                                  }
+                                      ? "cursor-grabbing opacity-90 z-[9999]"
+                                      : "cursor-grab hover:shadow-md"
+                                  } transition-all duration-200 ease-out`}
+                                  style={{
+                                    ...prov.draggableProps.style, // mantém transform/top/left calculados pela lib
+                                    ...(snap.isDragging && {
+                                      boxShadow: "0 20px 40px rgba(0,0,0,0.3)",
+                                      borderRadius: "12px",
+                                      backgroundColor: "rgba(255,255,255,0.95)",
+                                      border: "2px solid #3b82f6",
+                                    }),
+                                  }}
+                                  data-testid={`card-opportunity-${oportunidade.id}`}
                                 >
-                                  <CardHeader className="pb-1 px-3 pt-3">
-                                    <div className="flex items-start justify-between gap-2">
-                                      <CardTitle className="text-sm font-medium truncate flex-1 min-w-0">
-                                        {oportunidade.titulo}
-                                      </CardTitle>
-                                      <div className="flex gap-0.5 flex-shrink-0 pointer-events-auto">
-                                        <Button
-                                          variant="ghost"
-                                          size="icon"
-                                          className="h-5 w-5"
-                                          onMouseDown={(e) => {
-                                            e.stopPropagation();
-                                          }}
-                                          onClick={(e) => {
-                                            e.stopPropagation();
-                                            e.preventDefault();
-                                          }}
-                                          data-testid={`button-edit-opportunity-${oportunidade.id}`}
-                                        >
-                                          <Edit2 className="w-2.5 h-2.5" />
-                                        </Button>
-                                        <Button
-                                          variant="ghost"
-                                          size="icon"
-                                          className="h-5 w-5"
-                                          onMouseDown={(e) => {
-                                            e.stopPropagation();
-                                          }}
-                                          onClick={(e) => {
-                                            e.stopPropagation();
-                                            e.preventDefault();
-                                            excluirOportunidadeHandler(
-                                              oportunidade.id,
-                                            );
-                                          }}
-                                          data-testid={`button-delete-opportunity-${oportunidade.id}`}
-                                        >
-                                          <Trash2 className="w-2.5 h-2.5 text-destructive" />
-                                        </Button>
+                                  <Card
+                                    className={`${
+                                      snap.isDragging
+                                        ? "border-blue-400 border-2 pointer-events-none bg-white dark:bg-gray-800 shadow-lg"
+                                        : "bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 shadow-sm hover:shadow-md transition-all duration-200"
+                                    }`}
+                                  >
+                                    <CardHeader className="pb-1 px-3 pt-3">
+                                      <div className="flex items-start justify-between gap-2">
+                                        <CardTitle className="text-sm font-medium truncate flex-1 min-w-0">
+                                          {oportunidade.titulo}
+                                        </CardTitle>
+                                        <div className="flex gap-0.5 flex-shrink-0 pointer-events-auto">
+                                          <Button
+                                            variant="ghost"
+                                            size="icon"
+                                            className="h-5 w-5"
+                                            onMouseDown={(e) => e.stopPropagation()}
+                                            onClick={(e) => {
+                                              e.stopPropagation();
+                                              e.preventDefault();
+                                            }}
+                                            data-testid={`button-edit-opportunity-${oportunidade.id}`}
+                                          >
+                                            <Edit2 className="w-2.5 h-2.5" />
+                                          </Button>
+                                          <Button
+                                            variant="ghost"
+                                            size="icon"
+                                            className="h-5 w-5"
+                                            onMouseDown={(e) => e.stopPropagation()}
+                                            onClick={(e) => {
+                                              e.stopPropagation();
+                                              e.preventDefault();
+                                              excluirOportunidadeHandler(oportunidade.id);
+                                            }}
+                                            data-testid={`button-delete-opportunity-${oportunidade.id}`}
+                                          >
+                                            <Trash2 className="w-2.5 h-2.5 text-destructive" />
+                                          </Button>
+                                        </div>
                                       </div>
-                                    </div>
-                                  </CardHeader>
-                                  <CardContent className="pt-0 px-3 pb-3">
-                                    <p className="text-xs text-muted-foreground mb-2 line-clamp-2">
-                                      {oportunidade.descricao}
-                                    </p>
+                                    </CardHeader>
+                                    <CardContent className="pt-0 px-3 pb-3">
+                                      <p className="text-xs text-muted-foreground mb-2 line-clamp-2">
+                                        {oportunidade.descricao}
+                                      </p>
 
-                                    <div className="space-y-1.5">
-                                      <div className="flex items-center gap-2 text-xs">
-                                        <DollarSign className="w-3 h-3 text-emerald-500 flex-shrink-0" />
-                                        <span className="font-medium text-emerald-600 truncate">
-                                          {oportunidade.valor
-                                            ? oportunidade.valor.toLocaleString(
-                                              "pt-BR",
-                                              {
-                                                style: "currency",
-                                                currency: "BRL",
-                                              },
-                                            )
-                                            : "R$ 0,00"}
-                                        </span>
-                                      </div>
-
-                                      <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                                        <User className="w-3 h-3 flex-shrink-0" />
-                                        <span className="truncate">
-                                          {oportunidade.cliente.nome}
-                                        </span>
-                                      </div>
-
-                                      {oportunidade.dataPrevisao && (
-                                        <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                                          <Calendar className="w-3 h-3 flex-shrink-0" />
-                                          <span className="truncate">
-                                            {new Date(
-                                              oportunidade.dataPrevisao,
-                                            ).toLocaleDateString("pt-BR")}
+                                      <div className="space-y-1.5">
+                                        <div className="flex items-center gap-2 text-xs">
+                                          <DollarSign className="w-3 h-3 text-emerald-500 flex-shrink-0" />
+                                          <span className="font-medium text-emerald-600 truncate">
+                                            {oportunidade.valor
+                                              ? oportunidade.valor.toLocaleString("pt-BR", {
+                                                  style: "currency",
+                                                  currency: "BRL",
+                                                })
+                                              : "R$ 0,00"}
                                           </span>
                                         </div>
-                                      )}
-                                    </div>
 
-                                    <div className="mt-2 pt-2 border-t border-border/50">
-                                      <div className="flex items-center justify-between gap-2">
-                                        <Badge
-                                          variant="outline"
-                                          className="text-xs truncate max-w-[60%]"
-                                        >
-                                          {oportunidade.usuario.nome}
-                                        </Badge>
-                                        {!!oportunidade.probabilidade && (
-                                          <Badge
-                                            variant="secondary"
-                                            className="text-xs flex-shrink-0"
-                                          >
-                                            {oportunidade.probabilidade}%
-                                          </Badge>
+                                        <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                                          <User className="w-3 h-3 flex-shrink-0" />
+                                          <span className="truncate">{oportunidade.cliente.nome}</span>
+                                        </div>
+
+                                        {oportunidade.dataPrevisao && (
+                                          <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                                            <Calendar className="w-3 h-3 flex-shrink-0" />
+                                            <span className="truncate">
+                                              {new Date(oportunidade.dataPrevisao).toLocaleDateString("pt-BR")}
+                                            </span>
+                                          </div>
                                         )}
                                       </div>
-                                    </div>
-                                  </CardContent>
-                                </Card>
-                              </div>
-                            )}
+
+                                      <div className="mt-2 pt-2 border-t border-border/50">
+                                        <div className="flex items-center justify-between gap-2">
+                                          <Badge variant="outline" className="text-xs truncate max-w-[60%]">
+                                            {oportunidade.usuario.nome}
+                                          </Badge>
+                                          {!!oportunidade.probabilidade && (
+                                            <Badge variant="secondary" className="text-xs flex-shrink-0">
+                                              {oportunidade.probabilidade}%
+                                            </Badge>
+                                          )}
+                                        </div>
+                                      </div>
+                                    </CardContent>
+                                  </Card>
+                                </div>
+                              );
+                              return <PortalArrasto ativo={snap.isDragging}>{Conteudo}</PortalArrasto>;
+                            }}
                           </Draggable>
                         ))}
                         {provided.placeholder}

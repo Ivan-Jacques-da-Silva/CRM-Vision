@@ -170,7 +170,7 @@
 
   .tag {
     @apply inline-flex items-center rounded-full px-3 py-1 text-xs font-medium glass-card;
-  } 
+  }
 
 }
 
@@ -199,9 +199,23 @@
   }
 }
 
-.slide-up {
-  animation: slide-up 0.3s ease-out forwards;
+/* anima só opacidade + margem, sem transform */
+@keyframes slide-up-safe {
+  from {
+    opacity: 0;
+    margin-top: 30px;
+  }
+
+  to {
+    opacity: 1;
+    margin-top: 0;
+  }
 }
+
+.slide-up {
+  animation: slide-up-safe 0.3s ease-out forwards;
+}
+
 
 .fade-in-scale {
   animation: fade-in-scale 0.5s ease-out forwards;
@@ -210,67 +224,443 @@
 
 /* Removed problematic interactive-element class that was blocking clicks */
 
-  /* Drag and Drop styles for Kanban */
-  /* Allow drag library to handle transforms - DO NOT override transform for drag elements */
+/* Kanban Board Styles */
+.kanban-container {
+  height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
 
-  [data-rfd-draggable-context-id] {
-    cursor: grab !important;
-    touch-action: none;
-    user-select: none;
+.kanban-loading-container {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 16rem;
+  flex-direction: column;
+}
+
+.kanban-loading-spinner {
+  width: 2rem;
+  height: 2rem;
+  border: 2px solid transparent;
+  border-bottom: 2px solid hsl(var(--primary));
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+  margin: 0 auto;
+}
+
+.kanban-loading-text {
+  margin-top: 0.5rem;
+  color: hsl(var(--muted-foreground));
+}
+
+.kanban-header {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  justify-content: space-between;
+  padding: 0.75rem;
+  border-bottom: 1px solid hsl(var(--border) / 0.5);
+  background: hsl(var(--muted) / 0.2);
+  gap: 0.75rem;
+}
+
+@media (min-width: 640px) {
+  .kanban-header {
+    flex-direction: row;
+    align-items: center;
+    gap: 0;
   }
+}
 
-  [data-rfd-draggable-context-id]:hover {
-    cursor: grab !important;
+.kanban-pipeline-controls {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  width: 100%;
+}
+
+@media (min-width: 640px) {
+  .kanban-pipeline-controls {
+    gap: 0.75rem;
+    width: auto;
   }
+}
 
-  [data-rfd-drag-handle-context-id] {
-    touch-action: none;
-    user-select: none;
-    cursor: grab !important;
+.kanban-pipeline-select {
+  background: hsl(var(--background));
+  border: 1px solid hsl(var(--border));
+  border-radius: 0.375rem;
+  padding: 0.25rem 0.5rem;
+  font-size: 0.75rem;
+  color: hsl(var(--foreground));
+  flex: 1;
+}
+
+@media (min-width: 640px) {
+  .kanban-pipeline-select {
+    font-size: 0.875rem;
+    flex: none;
   }
+}
 
-  [data-rfd-drag-handle-context-id]:hover {
-    cursor: grab !important;
+.kanban-new-pipeline-btn {
+  font-size: 0.75rem;
+  white-space: nowrap;
+}
+
+.kanban-new-opportunity-btn {
+  width: 100%;
+}
+
+@media (min-width: 640px) {
+  .kanban-new-opportunity-btn {
+    width: auto;
   }
+}
 
-  /* During drag - enhance visual feedback but preserve transforms */
-  [data-rfd-drag-handle-dragging="true"] {
-    cursor: grabbing !important;
-    opacity: 0.8 !important;
-    z-index: 999 !important;
-    box-shadow: 0 8px 25px rgba(0, 0, 0, 0.25) !important;
-    /* IMPORTANTE: Não definir transform, position, left, top aqui - deixar a biblioteca controlar */
+.kanban-board-container {
+  flex: 1;
+  overflow-x: auto;
+}
+
+.kanban-columns-wrapper {
+  display: flex;
+  gap: 0.75rem;
+  padding: 0.75rem;
+  min-width: max-content;
+}
+
+.kanban-column {
+  width: 16rem;
+  transition: all 0.2s ease;
+}
+
+@media (min-width: 640px) {
+  .kanban-column {
+    width: 18rem;
   }
+}
 
-  /* Permitir que a biblioteca de drag and drop controle completamente o posicionamento */
-  [data-rfd-draggable-context-id] {
-    position: relative !important;
+@media (min-width: 1024px) {
+  .kanban-column {
+    width: 20rem;
   }
+}
 
-  /* Resetar estilos que podem interferir com o drag */
-  .glass-card[data-rfd-drag-handle-dragging="true"] {
-    backdrop-filter: none !important;
-    -webkit-backdrop-filter: none !important;
-    background: rgba(255, 255, 255, 0.9) !important;
-  }
+.kanban-column-header {
+  background: white;
+  border: 1px solid hsl(var(--border));
+  border-radius: 0.5rem;
+  padding: 0.75rem;
+  margin-bottom: 0.75rem;
+  box-shadow: 0 1px 3px 0 rgb(0 0 0 / 0.1);
+}
 
-  .dark .glass-card[data-rfd-drag-handle-dragging="true"] {
-    background: rgba(0, 0, 0, 0.9) !important;
-  }
+.dark .kanban-column-header {
+  background: hsl(var(--card));
+  border-color: hsl(var(--border));
+}
 
-  /* Removido regra global que interferia com o posicionamento da biblioteca */
+.kanban-column-header-content {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 0.5rem;
+}
 
-  /* Enhanced styling for dragged cards */
-  [data-rfd-drag-handle-dragging="true"] .glass-card {
-    background: rgba(255, 255, 255, 0.95) !important;
-    border: 1px solid rgba(59, 130, 246, 0.5) !important;
-    backdrop-filter: blur(8px) !important;
-    -webkit-backdrop-filter: blur(8px) !important;
-  }
+.kanban-column-icon-wrapper {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  min-width: 0;
+  flex: 1;
+}
 
-  .dark [data-rfd-drag-handle-dragging="true"] .glass-card {
-    background: rgba(30, 30, 30, 0.95) !important;
-    border: 1px solid rgba(59, 130, 246, 0.5) !important;
-    backdrop-filter: blur(8px) !important;
-    -webkit-backdrop-filter: blur(8px) !important;
-  }
+.kanban-column-icon {
+  padding: 0.375rem;
+  border-radius: 0.5rem;
+  flex-shrink: 0;
+}
+
+.kanban-column-icon-svg {
+  height: 0.875rem;
+  width: 0.875rem;
+}
+
+.kanban-column-title-wrapper {
+  min-width: 0;
+  flex: 1;
+}
+
+.kanban-column-title {
+  font-weight: 500;
+  color: hsl(var(--foreground));
+  font-size: 0.875rem;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.kanban-column-total {
+  font-size: 0.75rem;
+  color: hsl(var(--muted-foreground));
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.kanban-column-stats {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 0.25rem;
+  flex-shrink: 0;
+}
+
+.kanban-column-count-badge {
+  font-size: 0.75rem;
+}
+
+.kanban-column-probability {
+  font-size: 0.75rem;
+  color: hsl(var(--muted-foreground));
+}
+
+.kanban-cards-container {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  min-height: 12.5rem;
+  height: calc(100vh - 10rem);
+  overflow-y: auto;
+  padding: 0.5rem;
+  border-radius: 0.5rem;
+  background: hsl(var(--muted) / 0.1);
+  position: relative;
+}
+
+.dark .kanban-cards-container {
+  background: hsl(var(--muted) / 0.05);
+}
+
+.kanban-cards-container-dragging {
+  background: hsl(var(--primary) / 0.05);
+  border: 2px dashed hsl(var(--primary) / 0.2);
+}
+
+.kanban-card-wrapper {
+  transition: all 0.2s ease-out;
+  cursor: grab;
+  touch-action: none;
+  user-select: none;
+}
+
+.kanban-card-normal:hover {
+  box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
+}
+
+.kanban-card-dragging {
+  cursor: grabbing !important;
+  opacity: 0.9;
+  z-index: 9999 !important;
+  transform: rotate(2deg) scale(1.05);
+}
+
+.kanban-opportunity-card {
+  background: white;
+  border: 1px solid hsl(var(--border));
+  box-shadow: 0 1px 3px 0 rgb(0 0 0 / 0.1);
+  transition: all 0.2s ease;
+}
+
+.dark .kanban-opportunity-card {
+  background: hsl(var(--card));
+  border-color: hsl(var(--border));
+}
+
+.kanban-card-header {
+  padding-bottom: 0.25rem;
+  padding-left: 0.75rem;
+  padding-right: 0.75rem;
+  padding-top: 0.75rem;
+}
+
+.kanban-card-header-content {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 0.5rem;
+}
+
+.kanban-card-title {
+  font-size: 0.875rem;
+  font-weight: 500;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  flex: 1;
+  min-width: 0;
+}
+
+.kanban-card-actions {
+  display: flex;
+  gap: 0.125rem;
+  flex-shrink: 0;
+  pointer-events: auto;
+}
+
+.kanban-action-btn {
+  height: 1.25rem;
+  width: 1.25rem;
+}
+
+.kanban-action-icon {
+  width: 0.625rem;
+  height: 0.625rem;
+}
+
+.kanban-delete-icon {
+  color: hsl(var(--destructive));
+}
+
+.kanban-card-content {
+  padding-top: 0;
+  padding-left: 0.75rem;
+  padding-right: 0.75rem;
+  padding-bottom: 0.75rem;
+}
+
+.kanban-card-description {
+  font-size: 0.75rem;
+  color: hsl(var(--muted-foreground));
+  margin-bottom: 0.5rem;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.kanban-card-details {
+  display: flex;
+  flex-direction: column;
+  gap: 0.375rem;
+}
+
+.kanban-card-detail-item {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.75rem;
+}
+
+.kanban-detail-icon {
+  width: 0.75rem;
+  height: 0.75rem;
+  flex-shrink: 0;
+}
+
+.kanban-value-icon {
+  color: hsl(142 76% 36%);
+}
+
+.kanban-detail-value {
+  font-weight: 500;
+  color: hsl(142 71% 45%);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.kanban-client-detail,
+.kanban-date-detail {
+  color: hsl(var(--muted-foreground));
+}
+
+.kanban-detail-text {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.kanban-card-footer {
+  margin-top: 0.5rem;
+  padding-top: 0.5rem;
+  border-top: 1px solid hsl(var(--border) / 0.5);
+}
+
+.kanban-card-footer-content {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+}
+
+.kanban-user-badge {
+  font-size: 0.75rem;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  max-width: 60%;
+}
+
+.kanban-probability-badge {
+  font-size: 0.75rem;
+  flex-shrink: 0;
+}
+
+/* Drag and Drop library styles */
+[data-rfd-draggable-context-id] {
+  cursor: grab !important;
+  touch-action: none;
+  user-select: none;
+}
+
+[data-rfd-draggable-context-id]:hover {
+  cursor: grab !important;
+}
+
+[data-rfd-drag-handle-context-id] {
+  touch-action: none;
+  user-select: none;
+  cursor: grab !important;
+}
+
+[data-rfd-drag-handle-context-id]:hover {
+  cursor: grab !important;
+}
+
+[data-rfd-drag-handle-dragging="true"] {
+  cursor: grabbing !important;
+  opacity: 0.8 !important;
+  z-index: 9999 !important;
+  box-shadow: 0 8px 25px rgba(0, 0, 0, 0.25) !important;
+}
+
+/* Resetar estilos que podem interferir com o drag */
+.glass-card[data-rfd-drag-handle-dragging="true"] {
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+  background: rgba(255, 255, 255, 0.9) !important;
+}
+
+.dark .glass-card[data-rfd-drag-handle-dragging="true"] {
+  background: rgba(0, 0, 0, 0.9) !important;
+}
+
+/* Removido regra global que interferia com o posicionamento da biblioteca */
+
+/* Enhanced styling for dragged cards */
+[data-rfd-drag-handle-dragging="true"] .glass-card {
+  background: rgba(255, 255, 255, 0.95) !important;
+  border: 1px solid rgba(59, 130, 246, 0.5) !important;
+  backdrop-filter: blur(8px) !important;
+  -webkit-backdrop-filter: blur(8px) !important;
+}
+
+.dark [data-rfd-drag-handle-dragging="true"] .glass-card {
+  background: rgba(30, 30, 30, 0.95) !important;
+  border: 1px solid rgba(59, 130, 246, 0.5) !important;
+  backdrop-filter: blur(8px) !important;
+  -webkit-backdrop-filter: blur(8px) !important;
+}

@@ -18,7 +18,7 @@ export const Sales = () => {
               Gerencie suas oportunidades e acompanhe o progresso
             </p>
           </div>
-          
+
           {/* Compact Stats */}
           <div className="flex gap-2 sm:gap-3">
             <div className="glass-card rounded-lg p-2 sm:p-3 interactive-element group min-w-0">
@@ -30,7 +30,7 @@ export const Sales = () => {
                 </div>
               </div>
             </div>
-            
+
             <div className="glass-card rounded-lg p-2 sm:p-3 interactive-element group min-w-0">
               <div className="flex items-center gap-1.5 sm:gap-2">
                 <TrendingUp className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-blue-500 group-hover:scale-110 transition-transform flex-shrink-0" />
@@ -45,9 +45,10 @@ export const Sales = () => {
       </div>
 
       {/* Kanban Board - Now with more focus */}
-      <div className="slide-up">
+      <div>
         <KanbanBoard />
       </div>
+
     </div>
   );
 };
