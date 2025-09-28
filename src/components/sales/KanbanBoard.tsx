@@ -336,11 +336,11 @@ export const KanbanBoard: React.FC = () => {
               const mediaProb =
                 items.length > 0
                   ? Math.round(
-                      items.reduce(
-                        (total, item) => total + (item.probabilidade || 0),
-                        0,
-                      ) / items.length,
-                    )
+                    items.reduce(
+                      (total, item) => total + (item.probabilidade || 0),
+                      0,
+                    ) / items.length,
+                  )
                   : 0;
 
               return (
@@ -392,8 +392,9 @@ export const KanbanBoard: React.FC = () => {
                       <div
                         ref={provided.innerRef}
                         {...provided.droppableProps}
-                        className="space-y-3 min-h-[200px] h-[calc(100vh-160px)] overflow-y-auto p-2 rounded-lg bg-gray-50 dark:bg-gray-900/50"
+                        className="space-y-3 min-h-[200px] h-[calc(100vh-160px)] overflow-y-auto p-2 rounded-lg bg-gray-50 dark:bg-gray-900/50 relative"
                       >
+
                         {items.map((oportunidade, index) => (
                           <Draggable
                             key={oportunidade.id}
@@ -410,7 +411,8 @@ export const KanbanBoard: React.FC = () => {
                                     ? "cursor-grabbing opacity-80 z-[999] shadow-2xl"
                                     : "cursor-grab"
                                 }
-                                style={prov.draggableProps.style}
+                                style={{ ...prov.draggableProps.style }}
+
                                 data-testid={`card-opportunity-${oportunidade.id}`}
                               >
                                 <Card
@@ -473,12 +475,12 @@ export const KanbanBoard: React.FC = () => {
                                         <span className="font-medium text-emerald-600 truncate">
                                           {oportunidade.valor
                                             ? oportunidade.valor.toLocaleString(
-                                                "pt-BR",
-                                                {
-                                                  style: "currency",
-                                                  currency: "BRL",
-                                                },
-                                              )
+                                              "pt-BR",
+                                              {
+                                                style: "currency",
+                                                currency: "BRL",
+                                              },
+                                            )
                                             : "R$ 0,00"}
                                         </span>
                                       </div>

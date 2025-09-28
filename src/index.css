@@ -114,11 +114,11 @@
 }
 
 @layer components {
-  /* .card-hover {
+  .card-hover {
     @apply transition-all duration-300 hover:shadow-lg;
-  } */
+  }
 
-  /* .glass-card {
+  .glass-card {
     background: var(--glass-bg);
     backdrop-filter: blur(16px);
     -webkit-backdrop-filter: blur(16px);
@@ -133,7 +133,7 @@
   }
 
   /* Light theme specific borders for Kanban cards */
-  /* :root .glass-card {
+  :root .glass-card {
     border: 1px solid rgba(0, 0, 0, 0.1);
   }
 
@@ -142,20 +142,20 @@
   }
 
   /* Kanban column headers in light theme */
-  /* :root .kanban-header {
+  :root .kanban-header {
     border: 1px solid rgba(0, 0, 0, 0.08);
   }
 
   /* Card titles and content borders in light theme */
-  /* :root .kanban-card {
+  :root .kanban-card {
     border: 1px solid rgba(0, 0, 0, 0.12);
   }
 
   :root .kanban-card:hover {
     border-color: rgba(0, 0, 0, 0.18);
-  } */
+  }
 
-  /* .glass-button {
+  .glass-button {
     background: var(--glass-bg);
     backdrop-filter: blur(12px);
     -webkit-backdrop-filter: blur(12px);
@@ -166,11 +166,11 @@
 
   .glass-button:active {
     background: var(--active-glass);
-  } */
+  }
 
-  /* .tag {
+  .tag {
     @apply inline-flex items-center rounded-full px-3 py-1 text-xs font-medium glass-card;
-  } */
+  } 
 
 }
 
@@ -210,67 +210,67 @@
 
 /* Removed problematic interactive-element class that was blocking clicks */
 
-/* Drag and Drop styles for Kanban */
-/* Allow drag library to handle transforms - DO NOT override transform for drag elements */
+  /* Drag and Drop styles for Kanban */
+  /* Allow drag library to handle transforms - DO NOT override transform for drag elements */
 
-[data-rfd-draggable-context-id] {
-  cursor: grab !important;
-  touch-action: none;
-  user-select: none;
-}
+  [data-rfd-draggable-context-id] {
+    cursor: grab !important;
+    touch-action: none;
+    user-select: none;
+  }
 
-[data-rfd-draggable-context-id]:hover {
-  cursor: grab !important;
-}
+  [data-rfd-draggable-context-id]:hover {
+    cursor: grab !important;
+  }
 
-[data-rfd-drag-handle-context-id] {
-  touch-action: none;
-  user-select: none;
-  cursor: grab !important;
-}
+  [data-rfd-drag-handle-context-id] {
+    touch-action: none;
+    user-select: none;
+    cursor: grab !important;
+  }
 
-[data-rfd-drag-handle-context-id]:hover {
-  cursor: grab !important;
-}
+  [data-rfd-drag-handle-context-id]:hover {
+    cursor: grab !important;
+  }
 
-/* During drag - enhance visual feedback but preserve transforms */
-[data-rfd-drag-handle-dragging="true"] {
-  cursor: grabbing !important;
-  opacity: 0.8 !important;
-  z-index: 999 !important;
-  box-shadow: 0 8px 25px rgba(0, 0, 0, 0.25) !important;
-  /* IMPORTANTE: Não definir transform, position, left, top aqui - deixar a biblioteca controlar */
-}
+  /* During drag - enhance visual feedback but preserve transforms */
+  [data-rfd-drag-handle-dragging="true"] {
+    cursor: grabbing !important;
+    opacity: 0.8 !important;
+    z-index: 999 !important;
+    box-shadow: 0 8px 25px rgba(0, 0, 0, 0.25) !important;
+    /* IMPORTANTE: Não definir transform, position, left, top aqui - deixar a biblioteca controlar */
+  }
 
-/* Permitir que a biblioteca de drag and drop controle completamente o posicionamento */
-[data-rfd-draggable-context-id] {
-  position: relative !important;
-}
+  /* Permitir que a biblioteca de drag and drop controle completamente o posicionamento */
+  [data-rfd-draggable-context-id] {
+    position: relative !important;
+  }
 
-/* Resetar estilos que podem interferir com o drag */
-.glass-card[data-rfd-drag-handle-dragging="true"] {
-  backdrop-filter: none !important;
-  -webkit-backdrop-filter: none !important;
-  background: rgba(255, 255, 255, 0.9) !important;
-}
+  /* Resetar estilos que podem interferir com o drag */
+  .glass-card[data-rfd-drag-handle-dragging="true"] {
+    backdrop-filter: none !important;
+    -webkit-backdrop-filter: none !important;
+    background: rgba(255, 255, 255, 0.9) !important;
+  }
 
-.dark .glass-card[data-rfd-drag-handle-dragging="true"] {
-  background: rgba(0, 0, 0, 0.9) !important;
-}
+  .dark .glass-card[data-rfd-drag-handle-dragging="true"] {
+    background: rgba(0, 0, 0, 0.9) !important;
+  }
 
-/* Removido regra global que interferia com o posicionamento da biblioteca */
+  /* Removido regra global que interferia com o posicionamento da biblioteca */
 
-/* Enhanced styling for dragged cards */
-/* [data-rfd-drag-handle-dragging="true"] .glass-card {
-  background: rgba(255, 255, 255, 0.95) !important;
-  border: 1px solid rgba(59, 130, 246, 0.5) !important;
-  backdrop-filter: blur(8px) !important;
-  -webkit-backdrop-filter: blur(8px) !important;
-}
+  /* Enhanced styling for dragged cards */
+  [data-rfd-drag-handle-dragging="true"] .glass-card {
+    background: rgba(255, 255, 255, 0.95) !important;
+    border: 1px solid rgba(59, 130, 246, 0.5) !important;
+    backdrop-filter: blur(8px) !important;
+    -webkit-backdrop-filter: blur(8px) !important;
+  }
 
-.dark [data-rfd-drag-handle-dragging="true"] .glass-card {
-  background: rgba(30, 30, 30, 0.95) !important;
-  border: 1px solid rgba(59, 130, 246, 0.5) !important;
-  backdrop-filter: blur(8px) !important;
-  -webkit-backdrop-filter: blur(8px) !important;
-} */
+  .dark [data-rfd-drag-handle-dragging="true"] .glass-card {
+    background: rgba(30, 30, 30, 0.95) !important;
+    border: 1px solid rgba(59, 130, 246, 0.5) !important;
+    backdrop-filter: blur(8px) !important;
+    -webkit-backdrop-filter: blur(8px) !important;
+  }
