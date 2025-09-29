@@ -212,7 +212,7 @@ export const Home: React.FC = () => {
             </Link>
           </Button>
           <div className="mt-4 text-sm opacity-75">
-            ✨ 14 dias grátis • Cancele quando quiser
+            ✨ 7 dias grátis • Cancele quando quiser
           </div>
         </div>
       </section>

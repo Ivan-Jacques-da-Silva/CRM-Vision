@@ -90,7 +90,7 @@ export const Plans: React.FC = () => {
             Escolha o Plano Ideal para seu Negócio
           </h1>
           <p className="text-xl text-muted-foreground max-w-2xl mx-auto">
-            Acelere suas vendas com as ferramentas certas. Todos os planos incluem teste grátis de 14 dias.
+            Acelere suas vendas com as ferramentas certas. Todos os planos incluem teste grátis de 7 dias.
           </p>
         </div>
 
@@ -138,7 +138,7 @@ export const Plans: React.FC = () => {
                 </Button>
                 
                 <p className="text-xs text-center text-muted-foreground">
-                  ✨ 14 dias grátis • Cancele quando quiser
+                  ✨ 7 dias grátis • Cancele quando quiser
                 </p>
               </CardContent>
             </Card>

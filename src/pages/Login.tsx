@@ -206,10 +206,10 @@ export const Login: React.FC = () => {
                 variant="outline"
                 size="sm"
                 className="w-full text-xs"
-                onClick={() => fillDemoCredentials('admin@crm.com', 'admin123')}
+                onClick={() => fillDemoCredentials('admin@demo.com', '123456')}
                 data-testid="button-admin-user"
               >
-                📧 admin@crm.com | 🔑 admin123
+                📧 admin@demo.com | 🔑 123456
               </Button>
             </div>
             <Link 

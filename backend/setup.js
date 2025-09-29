@@ -51,20 +51,43 @@ class SetupBanco {
   async conectarAdmin(tentativas = 5) {
     this.log('🔌', 'Conectando como admin...')
     let erroFinal = null
+
     for (let i = 1; i <= tentativas; i++) {
       try {
-        this.clienteAdmin = new Client(CONFIG_ADMIN)
-        await this.clienteAdmin.connect()
-        this.log('✅', 'Admin conectado')
-        return
+        const possiblePasswords = [
+          CONFIG_ADMIN.password,
+          'postgres',
+          'admin',
+          '123456',
+          ''
+        ]
+
+        for (const senha of possiblePasswords) {
+          try {
+            this.clienteAdmin = new Client({
+              ...CONFIG_ADMIN,
+              password: senha
+            })
+            await this.clienteAdmin.connect()
+            this.log('✅', `Admin conectado com senha "${senha || '(vazia)'}"`)
+            CONFIG_ADMIN.password = senha // salva a que funcionou
+            return
+          } catch (e) {
+            this.log('⏳', `Tentando senha "${senha || '(vazia)'}"... falhou`)
+          }
+        }
+
+        throw new Error('Nenhuma senha válida encontrada para usuário admin/postgres')
       } catch (e) {
         erroFinal = e
         this.log('⏳', `Tentativa ${i}/${tentativas} falhou: ${e.message}`)
-        if (i < tentativas) await esperar(1200)
+        if (i < tentativas) await esperar(1000)
       }
     }
+
     throw erroFinal
   }
+
 
   async validarPostgreSQL() {
     this.log('🔍', 'Validando PostgreSQL...')
@@ -111,16 +134,26 @@ class SetupBanco {
 
   async conectarCRM() {
     this.log('🔌', `Conectando ao banco "${CONFIG_CRM.database}"...`)
-    this.clienteCRM = new Client({
-      host: CONFIG_CRM.host,
-      port: CONFIG_CRM.port,
-      user: CONFIG_CRM.usuario,
-      password: CONFIG_CRM.senha,
-      database: CONFIG_CRM.database,
-    })
-    await this.clienteCRM.connect()
-    this.log('✅', 'Conectado ao banco CRM')
+    const hosts = [CONFIG_CRM.host || 'localhost', CONFIG_ADMIN.host || '/var/run/postgresql']
+
+    for (const host of hosts) {
+      try {
+        this.clienteCRM = new Client({
+          host,
+          port: CONFIG_CRM.port,
+          user: CONFIG_CRM.usuario,
+          password: CONFIG_CRM.senha,
+          database: CONFIG_CRM.database,
+        })
+        await this.clienteCRM.connect()
+        this.log('✅', `Conectado ao banco CRM (host="${host}")`)
+        CONFIG_CRM.host = host
+        return
+      } catch { /* tenta próximo */ }
+    }
+    throw new Error('Falha ao conectar no banco CRM em localhost e no socket')
   }
+
 
   async ajustarPermissoesSchema() {
     this.log('🛡️', 'Ajustando permissões do schema public...')
@@ -145,7 +178,7 @@ class SetupBanco {
     this.log('📝', 'Gerando .env...')
     const url = montarDatabaseUrl()
     const jwt = process.env.JWT_SECRET || `vision-crm-jwt-${Math.random().toString(36).slice(2)}`
-    
+
     const conteudo = [
       `# Vision CRM - Configurações do Backend`,
       `# Gerado automaticamente em ${new Date().toLocaleString('pt-BR')}`,
@@ -187,9 +220,9 @@ class SetupBanco {
   }
 
   executar(cmd, opcoes = {}) {
-    const defaultOpcoes = { 
-      stdio: 'inherit', 
-      cwd: this.raizProjeto, 
+    const defaultOpcoes = {
+      stdio: 'inherit',
+      cwd: this.raizProjeto,
       timeout: 240000, // 4 minutos
       ...opcoes
     }
@@ -204,7 +237,7 @@ class SetupBanco {
       path.join(this.caminhoNodeModules, '.cache'),
       path.join(this.raizProjeto, 'dist'),
     ]
-    
+
     cacheDirs.forEach(dir => {
       if (fs.existsSync(dir)) {
         fs.rmSync(dir, { recursive: true, force: true })
@@ -215,7 +248,7 @@ class SetupBanco {
 
   async limparDadosExistentes() {
     this.log('🧹', 'Limpando dados existentes...')
-    
+
     try {
       // Deletar em ordem devido às relações
       await this.clienteCRM.query('DELETE FROM tarefas')
@@ -223,7 +256,7 @@ class SetupBanco {
       await this.clienteCRM.query('DELETE FROM clientes')
       await this.clienteCRM.query('DELETE FROM usuarios')
       await this.clienteCRM.query('DELETE FROM empresas')
-      
+
       this.log('✅', 'Dados existentes removidos com sucesso')
     } catch (error) {
       this.log('⚠️', `Erro ao limpar dados: ${error.message}`)
@@ -286,23 +319,23 @@ class SetupBanco {
 
   async corrigirPrisma() {
     this.log('🔧', 'Corrigindo problemas do Prisma...')
-    
+
     try {
       // Limpar cache
       await this.limparCache()
-      
+
       // Forçar regeneração completa
       this.log('🔄', 'Resetando migrações...')
       this.executar('npx prisma migrate reset --force')
-      
+
       this.log('🔧', 'Gerando client atualizado...')
       this.executar('npx prisma generate')
-      
+
       this.log('🔄', 'Criando nova migração...')
       this.executar('npx prisma migrate dev --name fix_schema_complete')
-      
+
       this.log('✅', 'Problemas do Prisma corrigidos!')
-      
+
     } catch (e) {
       this.erro('Falha ao corrigir Prisma', e)
       throw e
@@ -334,7 +367,7 @@ class SetupBanco {
 
     try {
       const bcrypt = require('bcryptjs')
-      
+
       // Criar empresa demo (nome correto da tabela)
       await this.clienteCRM.query(`
         INSERT INTO "empresas" (id, nome, "createdAt", "updatedAt") 
@@ -346,7 +379,7 @@ class SetupBanco {
       const hash = await bcrypt.hash('123456', 10)
       const agora = new Date()
       const trialEnd = new Date(agora.getTime() + 30 * 24 * 60 * 60 * 1000) // 30 dias
-      
+
       await this.clienteCRM.query(`
         INSERT INTO "usuarios" (
           id, nome, email, senha, "empresaId", plano, "trialStart", "trialEnd", 
@@ -379,7 +412,7 @@ class SetupBanco {
 
       // Criar dados exemplo para o Kanban
       await this.seedKanban()
-      
+
       this.log('✅', `Usuário criado com sucesso!`)
       this.log('📧', `Email: admin@demo.com`)
       this.log('🔐', `Senha: 123456`)
@@ -393,7 +426,7 @@ class SetupBanco {
 
   async seedKanban() {
     this.log('🎯', 'Criando dados exemplo para Kanban...')
-    
+
     // Oportunidades para o Kanban (diferentes status)
     const oportunidades = [
       { id: 'opp-1', titulo: 'Venda Software ERP', status: 'LEAD', valor: 50000, clienteId: 'cliente-demo-1' },
@@ -429,7 +462,7 @@ class SetupBanco {
       try {
         const dataVencimento = new Date()
         dataVencimento.setDate(dataVencimento.getDate() + Math.floor(Math.random() * 10) + 1)
-        
+
         await this.clienteCRM.query(`
           INSERT INTO "tarefas" (
             id, titulo, status, prioridade, "dataVencimento", "clienteId", 
@@ -449,7 +482,7 @@ class SetupBanco {
   async testarConexao() {
     const r = await this.clienteCRM.query('SELECT NOW() as agora, current_database() as db')
     this.log('🧪', `Conexão ok - DB: ${r.rows[0].db} em ${r.rows[0].agora.toLocaleString('pt-BR')}`)
-    
+
     const tabelas = await this.listarTabelas()
     this.log('📊', `Tabelas encontradas: ${tabelas.length}`)
     tabelas.forEach((t) => console.log(`   - ${t}`))
@@ -459,7 +492,7 @@ class SetupBanco {
     try {
       const tabelas = await this.listarTabelas()
       const tabelasEsperadas = ['usuarios', 'empresas', 'clientes', 'oportunidades', 'tarefas']
-      
+
       const faltando = tabelasEsperadas.filter(t => !tabelas.includes(t))
       if (faltando.length > 0) {
         this.log('⚠️', `Tabelas faltando: ${faltando.join(', ')}`)
@@ -494,14 +527,14 @@ class SetupBanco {
 
   async resetCompleto() {
     this.log('🔄', 'Executando reset completo...')
-    
+
     try {
       // Parar qualquer processo que possa estar usando o banco
       await this.limpar()
-      
+
       // Limpar cache
       await this.limparCache()
-      
+
       // Reset do Prisma
       if (this.prismaDisponivel()) {
         this.log('🗑️', 'Resetando Prisma...')
@@ -511,7 +544,7 @@ class SetupBanco {
           this.log('⚠️', 'Reset do Prisma falhou, continuando...')
         }
       }
-      
+
       this.log('✅', 'Reset completo executado')
     } catch (e) {
       this.log('⚠️', `Erro durante reset: ${e.message}`)
@@ -520,11 +553,11 @@ class SetupBanco {
 
   async corrigirAutenticacao() {
     this.log('🔐', 'Corrigindo problemas de autenticação...')
-    
+
     try {
       // Reconectar como admin
       await this.conectarAdmin()
-      
+
       // Dropar e recriar o usuário
       try {
         await this.clienteAdmin.query(`DROP USER IF EXISTS ${CONFIG_CRM.usuario}`)
@@ -532,14 +565,14 @@ class SetupBanco {
       } catch (e) {
         this.log('ℹ️', 'Usuário não existia')
       }
-      
+
       // Recriar usuário com permissões completas
       await this.clienteAdmin.query(`CREATE USER ${CONFIG_CRM.usuario} WITH PASSWORD '${CONFIG_CRM.senha}' CREATEDB CREATEROLE`)
       await this.clienteAdmin.query(`ALTER DATABASE ${CONFIG_CRM.database} OWNER TO ${CONFIG_CRM.usuario}`)
       await this.clienteAdmin.query(`GRANT ALL PRIVILEGES ON DATABASE ${CONFIG_CRM.database} TO ${CONFIG_CRM.usuario}`)
-      
+
       this.log('✅', 'Autenticação corrigida')
-      
+
     } catch (e) {
       this.log('⚠️', `Erro ao corrigir autenticação: ${e.message}`)
       throw e
@@ -548,17 +581,17 @@ class SetupBanco {
 
   async corrigirUsuario() {
     this.log('👤', 'Corrigindo usuário do banco...')
-    
+
     try {
       // Tentar alterar a senha primeiro
       await this.clienteAdmin.query(`ALTER USER ${CONFIG_CRM.usuario} WITH PASSWORD '${CONFIG_CRM.senha}'`)
-      
+
       // Garantir permissões
       await this.clienteAdmin.query(`ALTER DATABASE ${CONFIG_CRM.database} OWNER TO ${CONFIG_CRM.usuario}`)
       await this.clienteAdmin.query(`GRANT ALL PRIVILEGES ON DATABASE ${CONFIG_CRM.database} TO ${CONFIG_CRM.usuario}`)
-      
+
       this.log('✅', 'Usuário corrigido')
-      
+
     } catch (e) {
       this.log('⚠️', 'Correção simples falhou, usando correção completa...')
       await this.corrigirAutenticacao()
@@ -567,17 +600,17 @@ class SetupBanco {
 
   async resetBancoCompleto() {
     this.log('🗄️', 'Reset completo do banco...')
-    
+
     try {
       // Dropar e recriar o banco
       await this.clienteAdmin.query(`DROP DATABASE IF EXISTS "${CONFIG_CRM.database}"`)
       await this.clienteAdmin.query(`CREATE DATABASE "${CONFIG_CRM.database}"`)
-      
+
       // Recriar usuário
       await this.corrigirAutenticacao()
-      
+
       this.log('✅', 'Banco resetado completamente')
-      
+
     } catch (e) {
       this.log('⚠️', `Erro no reset do banco: ${e.message}`)
       throw e
@@ -586,26 +619,26 @@ class SetupBanco {
 
   async corrigirPrismaCompleto() {
     this.log('🔧', 'Correção completa do Prisma...')
-    
+
     try {
       // Limpar tudo relacionado ao Prisma
       await this.limparCache()
-      
+
       // Forçar reset das migrações
       try {
         this.executar('npx prisma migrate reset --force')
       } catch (e) {
         this.log('ℹ️', 'Reset de migrações não necessário')
       }
-      
+
       // Regenerar client
       this.executar('npx prisma generate')
-      
+
       // Aplicar schema diretamente
       this.executar('npx prisma db push --force-reset')
-      
+
       this.log('✅', 'Prisma corrigido completamente')
-      
+
     } catch (e) {
       this.log('⚠️', `Erro na correção do Prisma: ${e.message}`)
       throw e
@@ -625,20 +658,20 @@ class SetupBanco {
       this.executar('npx prisma generate')
 
       this.log('🔄', 'Aplicando migrações com auto-correção...')
-      
+
       // Tentar migrate dev
       try {
         this.executar('npx prisma migrate dev --name auto_migration')
         this.log('✅', 'Migrações aplicadas com sucesso')
       } catch (e1) {
         this.log('⚠️', 'Migrate dev falhou, tentando db push...')
-        
+
         try {
           this.executar('npx prisma db push --force-reset')
           this.log('✅', 'Schema aplicado com db push')
         } catch (e2) {
           this.log('⚠️', 'DB push falhou, tentando correção completa...')
-          
+
           // Correção mais agressiva
           await this.corrigirPrismaCompleto()
         }
@@ -649,7 +682,7 @@ class SetupBanco {
       this.executar('npx prisma generate')
 
       this.log('✅', 'Prisma configurado com sucesso')
-      
+
     } catch (e) {
       this.log('⚠️', 'Falha no Prisma, tentando correção automática...')
       await this.corrigirPrismaCompleto()
@@ -658,23 +691,23 @@ class SetupBanco {
 
   async corrigirSchemaCompleto() {
     this.log('📋', 'Corrigindo schema do banco...')
-    
+
     try {
       // Aplicar schema diretamente
       this.executar('npx prisma db push --force-reset')
-      
+
       // Regenerar client
       this.executar('npx prisma generate')
-      
+
       // Criar nova migração
       try {
         this.executar('npx prisma migrate dev --name schema_fix')
       } catch (e) {
         this.log('ℹ️', 'Migração não necessária, schema já aplicado')
       }
-      
+
       this.log('✅', 'Schema corrigido')
-      
+
     } catch (e) {
       this.log('⚠️', `Erro na correção do schema: ${e.message}`)
       throw e
@@ -683,7 +716,7 @@ class SetupBanco {
 
   async diagnosticar() {
     this.log('🔍', 'Executando diagnóstico...')
-    
+
     console.log('\n📋 Status do Ambiente:')
     console.log(`   Node.js: ${process.version}`)
     console.log(`   NPM: ${execSync('npm --version', { encoding: 'utf8' }).trim()}`)
@@ -691,7 +724,7 @@ class SetupBanco {
     console.log(`   .env existe: ${fs.existsSync(this.caminhoEnv) ? '✅' : '❌'}`)
     console.log(`   node_modules existe: ${this.nodeModulesExiste() ? '✅' : '❌'}`)
     console.log(`   schema.prisma existe: ${this.prismaDisponivel() ? '✅' : '❌'}`)
-    
+
     // Testar conexão do banco
     try {
       await this.conectarAdmin()
@@ -708,22 +741,22 @@ class SetupBanco {
 
   async executarSeedCompleto() {
     this.log('🌱', 'Executando seed completo com dados exemplares...')
-    
+
     try {
       // Executar o seed-data.js que tem dados mais completos
-      this.executar('node seed-data.js --reset', { 
+      this.executar('node seed-data.js --reset', {
         stdio: 'pipe',
         encoding: 'utf8'
       })
-      
+
       this.log('✅', 'Seed completo executado com sucesso!')
       this.log('📊', 'Dados criados:')
       this.log('   🏢', '3 Empresas')
-      this.log('   👥', '3 Usuários (admin, vendedor, gerente)')  
+      this.log('   👥', '3 Usuários (admin, vendedor, gerente)')
       this.log('   👤', '5 Clientes diversos')
       this.log('   🎯', '7 Oportunidades (Kanban completo)')
       this.log('   📋', '10 Tarefas com prazos')
-      
+
     } catch (error) {
       this.log('⚠️', `Seed completo falhou, usando seed básico: ${error.message}`)
       // Se falhar, continuar com o seed básico que já foi executado
@@ -731,31 +764,31 @@ class SetupBanco {
   }
 
   async limpar() {
-    try { if (this.clienteCRM) await this.clienteCRM.end() } catch (_) {}
-    try { if (this.clienteAdmin) await this.clienteAdmin.end() } catch (_) {}
+    try { if (this.clienteCRM) await this.clienteCRM.end() } catch (_) { }
+    try { if (this.clienteAdmin) await this.clienteAdmin.end() } catch (_) { }
   }
 
   async executarFluxo() {
     console.log('🚀 Vision CRM - Setup Inteligente v2.1')
     console.log('=====================================')
     console.log('🧠 Detectando e corrigindo problemas automaticamente...')
-    
+
     let tentativas = 0
     const maxTentativas = 3
-    
+
     while (tentativas < maxTentativas) {
       try {
         tentativas++
         this.log('🔄', `Tentativa ${tentativas}/${maxTentativas}`)
-        
+
         // Conectar e validar PostgreSQL
         await this.conectarAdmin()
         await this.validarPostgreSQL()
-        
+
         // Criar banco e usuário
         await this.criarBanco()
         await this.criarUsuario()
-        
+
         // Tentar conectar ao CRM
         try {
           await this.conectarCRM()
@@ -764,28 +797,28 @@ class SetupBanco {
           await this.corrigirUsuario()
           await this.conectarCRM()
         }
-        
+
         await this.ajustarPermissoesSchema()
         await this.backupEnvExistente()
         this.escreverEnv()
-        
+
         // Rodar Prisma com auto-correção
         await this.rodarPrismaInteligente()
-        
+
         await this.seedBasico()
-        
+
         // Executar seed completo usando o seed-data.js
         await this.executarSeedCompleto()
-        
+
         await this.testarConexao()
         const schemaValido = await this.validarSchema()
-        
+
         if (!schemaValido) {
           this.log('🔧', 'Schema inválido detectado, corrigindo...')
           await this.corrigirSchemaCompleto()
           await this.validarSchema()
         }
-        
+
         console.log('\n=====================================')
         this.log('🎉', 'Setup concluído com sucesso!')
         this.log('✨', 'Todos os problemas foram resolvidos automaticamente!')
@@ -796,15 +829,15 @@ class SetupBanco {
         this.log('📊', 'Kanban: Dados exemplo incluídos')
         this.log('🌱', 'Dados completos: empresas, usuários, clientes, oportunidades e tarefas')
         console.log('')
-        
+
         return // Sucesso! Sair do loop
-        
+
       } catch (e) {
         this.log('⚠️', `Tentativa ${tentativas} falhou: ${e.message}`)
-        
+
         if (tentativas < maxTentativas) {
           this.log('🔄', 'Executando correções automáticas...')
-          
+
           try {
             // Auto-correção baseada no tipo de erro
             if (e.message.includes('Authentication failed') || e.message.includes('P1000')) {
@@ -816,10 +849,10 @@ class SetupBanco {
             } else {
               await this.resetCompleto()
             }
-            
+
             await this.limpar()
             await esperar(2000) // Aguardar 2 segundos
-            
+
           } catch (correcaoError) {
             this.log('⚠️', `Correção automática falhou: ${correcaoError.message}`)
           }
@@ -833,7 +866,7 @@ class SetupBanco {
         }
       }
     }
-    
+
     await this.limpar()
   }
 }
@@ -842,7 +875,7 @@ class SetupBanco {
 if (require.main === module) {
   const args = process.argv.slice(2)
   const setup = new SetupBanco()
-  
+
   if (args.includes('--help') || args.includes('-h')) {
     console.log(`
 🚀 Vision CRM Setup v2.1 - Setup Inteligente
@@ -874,14 +907,14 @@ Opções:
     `)
     process.exit(0)
   }
-  
+
   if (args.includes('--diagnostics')) {
     setup.diagnosticar()
       .then(() => setup.limpar())
       .catch(console.error)
     return
   }
-  
+
   if (args.includes('--fix-prisma')) {
     console.log('🔧 Corrigindo problemas do Prisma...')
     setup.conectarAdmin()
@@ -892,7 +925,7 @@ Opções:
       .catch(console.error)
     return
   }
-  
+
   if (args.includes('--migrate')) {
     console.log('🔄 Executando apenas migrações...')
     setup.limparCache()
@@ -901,7 +934,7 @@ Opções:
     console.log('✅ Migrações concluídas')
     process.exit(0)
   }
-  
+
   setup.executarFluxo().catch(console.error)
 }
 
