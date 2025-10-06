@@ -10,6 +10,7 @@ import clientesRoutes from './routes/clientes';
 import tarefasRoutes from './routes/tarefas';
 import oportunidadesRoutes from './routes/oportunidades';
 import trialRoutes from './routes/trial';
+import rankingRoutes from './routes/ranking';
 
 // Configurar dotenv para carregar .env de múltiplos locais
 [
@@ -88,6 +89,7 @@ app.use('/api/clientes', clientesRoutes);
 app.use('/api/tarefas', tarefasRoutes);
 app.use('/api/oportunidades', oportunidadesRoutes);
 app.use('/api/trial', trialRoutes);
+app.use('/api/ranking', rankingRoutes);
 
 // Rota de teste
 app.get('/api/health', (req: express.Request, res: express.Response) => {

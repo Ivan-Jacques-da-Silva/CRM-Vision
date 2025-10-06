@@ -16,6 +16,7 @@ import {
   CreditCard,
   Webhook,
   MessageCircle,
+  Trophy,
   LogOut
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
@@ -38,6 +39,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen, onItemClick }) => {
     { nome: 'Chat', caminho: '/chat', Icone: MessageCircle },
     { nome: 'Agenda', caminho: '/calendar', Icone: Calendar },
     { nome: 'Relatórios', caminho: '/reports', Icone: LineChart },
+    { nome: 'Ranking', caminho: '/ranking', Icone: Trophy },
     { nome: 'Integrações', caminho: '/integrations', Icone: Webhook },
     { nome: 'Assinatura', caminho: '/subscription', Icone: CreditCard },
     { nome: 'Configurações', caminho: '/settings', Icone: Settings },

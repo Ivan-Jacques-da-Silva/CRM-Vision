@@ -25,6 +25,7 @@ import { Integrations } from "./pages/Integrations";
 import { Chat } from "./pages/Chat";
 import { Subscription } from "./pages/Subscription";
 import { Settings } from "./pages/Settings";
+import Ranking from "./pages/Ranking";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -68,6 +69,9 @@ const App = () => (
           {/* Relatórios */}
           <Route path="/reports" element={<AppLayout><Reports /></AppLayout>} />
           <Route path="/relatorios" element={<Navigate to="/reports" replace />} />
+          
+          {/* Ranking */}
+          <Route path="/ranking" element={<AppLayout><Ranking /></AppLayout>} />
           
           {/* Integrações */}
           <Route path="/integrations" element={<AppLayout><Integrations /></AppLayout>} />

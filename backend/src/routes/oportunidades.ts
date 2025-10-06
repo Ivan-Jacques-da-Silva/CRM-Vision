@@ -135,6 +135,9 @@ router.put('/:id', requireActiveTrial, async (req: AuthenticatedRequest, res) =>
       return res.status(404).json({ message: 'Oportunidade não encontrada ou não pertence à sua empresa' });
     }
 
+    // Verificar se status mudou para GANHO para adicionar pontos
+    const statusMudouParaGanho = updates.status === 'GANHO' && oportunidade.status !== 'GANHO';
+
     // Remover empresaId e usuarioId do corpo da requisição para evitar alterações indevidas
     delete updates.empresaId;
     delete updates.usuarioId;
@@ -156,6 +159,19 @@ router.put('/:id', requireActiveTrial, async (req: AuthenticatedRequest, res) =>
         }
       }
     });
+
+    // Se status mudou para GANHO, adicionar pontos ao usuário
+    if (statusMudouParaGanho) {
+      const pontosGanhos = 100; // 100 pontos por venda fechada
+      await prisma.usuario.update({
+        where: { id: req.userId! },
+        data: {
+          salesPoints: {
+            increment: pontosGanhos
+          }
+        }
+      });
+    }
 
     res.json({ oportunidade: oportunidadeAtualizada });
   } catch (error) {
