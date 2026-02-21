@@ -1,16 +1,25 @@
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { Trophy, Medal, Award, TrendingUp, Database } from "lucide-react";
+import { Trophy, TrendingUp, Database, Crown, Download } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
+import { buscarRankingVendas } from "@/services/api";
 
 interface RankingUser {
   id: string;
   nome: string;
   email: string;
-  salesPoints: number;
+  valorTotal: number;
   posicao: number;
   vendasConcluidas: number;
 }
@@ -20,7 +29,7 @@ const dadosExemplares: RankingUser[] = [
     id: "1",
     nome: "Carlos Silva",
     email: "carlos@exemplo.com",
-    salesPoints: 1250,
+    valorTotal: 125000,
     posicao: 1,
     vendasConcluidas: 15
   },
@@ -28,7 +37,7 @@ const dadosExemplares: RankingUser[] = [
     id: "2",
     nome: "Maria Santos",
     email: "maria@exemplo.com",
-    salesPoints: 1100,
+    valorTotal: 110000,
     posicao: 2,
     vendasConcluidas: 12
   },
@@ -36,7 +45,7 @@ const dadosExemplares: RankingUser[] = [
     id: "3",
     nome: "João Oliveira",
     email: "joao@exemplo.com",
-    salesPoints: 980,
+    valorTotal: 98000,
     posicao: 3,
     vendasConcluidas: 11
   },
@@ -44,7 +53,7 @@ const dadosExemplares: RankingUser[] = [
     id: "4",
     nome: "Ana Costa",
     email: "ana@exemplo.com",
-    salesPoints: 850,
+    valorTotal: 85000,
     posicao: 4,
     vendasConcluidas: 9
   },
@@ -52,7 +61,7 @@ const dadosExemplares: RankingUser[] = [
     id: "5",
     nome: "Pedro Almeida",
     email: "pedro@exemplo.com",
-    salesPoints: 720,
+    valorTotal: 72000,
     posicao: 5,
     vendasConcluidas: 8
   },
@@ -60,7 +69,7 @@ const dadosExemplares: RankingUser[] = [
     id: "6",
     nome: "Juliana Ferreira",
     email: "juliana@exemplo.com",
-    salesPoints: 650,
+    valorTotal: 65000,
     posicao: 6,
     vendasConcluidas: 7
   },
@@ -68,7 +77,7 @@ const dadosExemplares: RankingUser[] = [
     id: "7",
     nome: "Ricardo Souza",
     email: "ricardo@exemplo.com",
-    salesPoints: 580,
+    valorTotal: 58000,
     posicao: 7,
     vendasConcluidas: 6
   },
@@ -76,7 +85,7 @@ const dadosExemplares: RankingUser[] = [
     id: "8",
     nome: "Fernanda Lima",
     email: "fernanda@exemplo.com",
-    salesPoints: 490,
+    valorTotal: 49000,
     posicao: 8,
     vendasConcluidas: 5
   }
@@ -85,20 +94,27 @@ const dadosExemplares: RankingUser[] = [
 export default function Ranking() {
   const [mostrarExemplares, setMostrarExemplares] = useState(false);
   const { data: ranking = [], isLoading } = useQuery<RankingUser[]>({
-    queryKey: ['/api/ranking'],
+    queryKey: ['ranking-vendas'],
+    queryFn: buscarRankingVendas,
   });
 
   const dadosParaMostrar = mostrarExemplares ? dadosExemplares : ranking;
 
-  const top3 = dadosParaMostrar.slice(0, 3);
-  const restante = dadosParaMostrar.slice(3);
+  const [primeiroColocado, ...restante] = dadosParaMostrar;
 
-  const getPodiumOrder = () => {
-    if (top3.length < 3) return top3;
-    return [top3[1], top3[0], top3[2]];
+  const agora = new Date();
+  const anoAtual = agora.getFullYear();
+  const mesAtual = agora.getMonth() + 1;
+
+  const handleExportCsv = () => {
+    const params = new URLSearchParams({
+      ano: String(anoAtual),
+      mes: String(mesAtual),
+      export: "csv",
+    });
+
+    window.open(`/api/ranking?${params.toString()}`, "_blank");
   };
-
-  const podiumOrder = getPodiumOrder();
 
   const getInitials = (nome: string) => {
     return nome
@@ -109,32 +125,12 @@ export default function Ranking() {
       .slice(0, 2);
   };
 
-  const getMedalColor = (posicao: number) => {
-    switch (posicao) {
-      case 1: return "text-yellow-500";
-      case 2: return "text-gray-400";
-      case 3: return "text-amber-600";
-      default: return "text-muted-foreground";
-    }
-  };
-
-  const getPodiumHeight = (posicao: number) => {
-    switch (posicao) {
-      case 1: return "h-48";
-      case 2: return "h-36";
-      case 3: return "h-28";
-      default: return "h-20";
-    }
-  };
-
-  const getPodiumBgColor = (posicao: number) => {
-    switch (posicao) {
-      case 1: return "bg-gradient-to-t from-yellow-500/20 to-yellow-500/5 dark:from-yellow-500/30 dark:to-yellow-500/10";
-      case 2: return "bg-gradient-to-t from-gray-400/20 to-gray-400/5 dark:from-gray-400/30 dark:to-gray-400/10";
-      case 3: return "bg-gradient-to-t from-amber-600/20 to-amber-600/5 dark:from-amber-600/30 dark:to-amber-600/10";
-      default: return "bg-muted";
-    }
-  };
+  const formatCurrency = (value: number) =>
+    value.toLocaleString("pt-BR", {
+      style: "currency",
+      currency: "BRL",
+      maximumFractionDigits: 0,
+    });
 
   if (isLoading) {
     return (
@@ -152,17 +148,27 @@ export default function Ranking() {
             🏆 Ranking de Vendas
           </h1>
           <p className="text-muted-foreground mt-1">
-            Acompanhe o desempenho da equipe
+            Acompanhe o desempenho da equipe ao longo do mês atual
           </p>
         </div>
-        <Button
-          onClick={() => setMostrarExemplares(!mostrarExemplares)}
-          variant={mostrarExemplares ? "default" : "outline"}
-          className="gap-2"
-        >
-          <Database className="h-4 w-4" />
-          {mostrarExemplares ? "Dados Reais" : "Dados Exemplares"}
-        </Button>
+        <div className="flex items-center gap-2">
+          <Button
+            onClick={() => setMostrarExemplares(!mostrarExemplares)}
+            variant={mostrarExemplares ? "default" : "outline"}
+            className="gap-2"
+          >
+            <Database className="h-4 w-4" />
+            {mostrarExemplares ? "Dados Reais" : "Dados Exemplares"}
+          </Button>
+          <Button
+            onClick={handleExportCsv}
+            variant="outline"
+            className="gap-2"
+          >
+            <Download className="h-4 w-4" />
+            Exportar CSV
+          </Button>
+        </div>
       </div>
 
       {dadosParaMostrar.length === 0 ? (
@@ -176,116 +182,104 @@ export default function Ranking() {
         </Card>
       ) : (
         <>
-          {top3.length > 0 && (
-            <Card className="bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm border border-gray-200 dark:border-gray-700">
-              <CardContent className="pt-8 pb-6">
-                <div className="flex items-end justify-center gap-4 mb-8">
-                  {podiumOrder.map((user, idx) => {
-                    if (!user) return null;
-                    const actualPosition = user.posicao;
-                    const displayOrder = actualPosition === 1 ? 1 : actualPosition === 2 ? 0 : 2;
-                    
-                    return (
-                      <div 
-                        key={user.id} 
-                        className="flex flex-col items-center"
-                        style={{ order: displayOrder }}
-                        data-testid={`podium-position-${actualPosition}`}
-                      >
-                        <div className="relative mb-3">
-                          <Avatar className="h-20 w-20 border-4 border-white dark:border-gray-700 shadow-lg">
-                            <AvatarFallback className={`text-xl font-bold ${getMedalColor(actualPosition)}`}>
-                              {getInitials(user.nome)}
-                            </AvatarFallback>
-                          </Avatar>
-                          {actualPosition === 1 && (
-                            <div className="absolute -top-2 -right-2 bg-yellow-500 rounded-full p-1.5 shadow-lg">
-                              <Trophy className="h-5 w-5 text-white" />
-                            </div>
-                          )}
-                          {actualPosition === 2 && (
-                            <div className="absolute -top-2 -right-2 bg-gray-400 rounded-full p-1.5 shadow-lg">
-                              <Medal className="h-5 w-5 text-white" />
-                            </div>
-                          )}
-                          {actualPosition === 3 && (
-                            <div className="absolute -top-2 -right-2 bg-amber-600 rounded-full p-1.5 shadow-lg">
-                              <Award className="h-5 w-5 text-white" />
-                            </div>
-                          )}
-                        </div>
-                        
-                        <div className="text-center mb-2">
-                          <p className="font-semibold text-foreground dark:text-white text-sm" data-testid={`text-name-${actualPosition}`}>
-                            {user.nome}
-                          </p>
-                          <p className="text-2xl font-bold mt-1" style={{ color: actualPosition === 1 ? '#eab308' : actualPosition === 2 ? '#9ca3af' : '#d97706' }}>
-                            {user.salesPoints}
-                          </p>
-                          <p className="text-xs text-muted-foreground">
-                            {user.vendasConcluidas} {user.vendasConcluidas === 1 ? 'venda' : 'vendas'}
-                          </p>
-                        </div>
-                        
-                        <div 
-                          className={`w-32 ${getPodiumHeight(actualPosition)} ${getPodiumBgColor(actualPosition)} rounded-t-lg border-t-4 border-l border-r border-gray-300 dark:border-gray-600 flex items-center justify-center`}
-                        >
-                          <span className={`text-4xl font-bold ${getMedalColor(actualPosition)}`}>
-                            {actualPosition}
-                          </span>
-                        </div>
-                      </div>
-                    );
-                  })}
+          {primeiroColocado && (
+            <Card className="bg-gradient-to-r from-yellow-500/10 via-amber-500/10 to-orange-500/10 dark:from-yellow-500/15 dark:via-amber-500/15 dark:to-orange-500/15 border border-yellow-500/40">
+              <CardContent className="flex flex-col md:flex-row items-center justify-between gap-6 py-6 px-6">
+                <div className="flex items-center gap-4">
+                  <div className="relative">
+                    <Avatar className="h-20 w-20 border-4 border-yellow-500/70 shadow-xl">
+                      <AvatarFallback className="bg-yellow-500 text-white text-2xl font-bold">
+                        {getInitials(primeiroColocado.nome)}
+                      </AvatarFallback>
+                    </Avatar>
+                    <div className="absolute -top-2 -right-2 bg-yellow-500 rounded-full p-1.5 shadow-lg">
+                      <Crown className="h-5 w-5 text-white" />
+                    </div>
+                  </div>
+                  <div>
+                    <p className="text-sm font-medium text-yellow-700 dark:text-yellow-300 uppercase tracking-wide">
+                      Líder de vendas até agora
+                    </p>
+                    <h2 className="text-2xl md:text-3xl font-bold text-foreground dark:text-white">
+                      {primeiroColocado.nome}
+                    </h2>
+                    <p className="text-sm text-muted-foreground">
+                      {primeiroColocado.vendasConcluidas}{" "}
+                      {primeiroColocado.vendasConcluidas === 1 ? "venda ganha" : "vendas ganhas"} na etapa Ganho
+                    </p>
+                  </div>
+                </div>
+                <div className="flex flex-col items-center md:items-end gap-2">
+                  <div className="flex items-center gap-2">
+                    <Trophy className="h-6 w-6 text-yellow-500" />
+                    <span className="text-sm font-medium text-muted-foreground">
+                      Valor total em vendas ganhas
+                    </span>
+                  </div>
+                  <p className="text-3xl md:text-4xl font-extrabold text-yellow-600 dark:text-yellow-400" data-testid="top-seller-valor-total">
+                    {formatCurrency(primeiroColocado.valorTotal)}
+                  </p>
+                  <Badge variant="secondary" className="mt-1">
+                    1º lugar no ranking de vendas
+                  </Badge>
                 </div>
               </CardContent>
             </Card>
           )}
 
-          {restante.length > 0 && (
-            <Card className="bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm border border-gray-200 dark:border-gray-700">
-              <CardContent className="p-6">
-                <h2 className="text-xl font-semibold mb-4 text-foreground dark:text-white flex items-center gap-2">
-                  <TrendingUp className="h-5 w-5" />
-                  Ranking Completo
-                </h2>
-                <div className="space-y-3">
-                  {restante.map((user) => (
-                    <div
-                      key={user.id}
-                      className="flex items-center justify-between p-4 rounded-lg bg-gray-50 dark:bg-gray-900/50 hover:bg-gray-100 dark:hover:bg-gray-900/70 transition-colors"
-                      data-testid={`rank-row-${user.posicao}`}
-                    >
-                      <div className="flex items-center gap-4 flex-1">
-                        <Badge variant="secondary" className="w-8 h-8 flex items-center justify-center rounded-full">
-                          {user.posicao}
-                        </Badge>
-                        <Avatar className="h-10 w-10">
-                          <AvatarFallback className="bg-primary/10 text-primary font-semibold">
-                            {getInitials(user.nome)}
-                          </AvatarFallback>
-                        </Avatar>
-                        <div className="flex-1">
-                          <p className="font-medium text-foreground dark:text-white" data-testid={`text-name-${user.posicao}`}>
-                            {user.nome}
-                          </p>
-                          <p className="text-sm text-muted-foreground">
-                            {user.vendasConcluidas} {user.vendasConcluidas === 1 ? 'venda concluída' : 'vendas concluídas'}
-                          </p>
-                        </div>
-                      </div>
-                      <div className="text-right">
-                        <p className="text-xl font-bold text-primary" data-testid={`text-points-${user.posicao}`}>
-                          {user.salesPoints}
-                        </p>
-                        <p className="text-xs text-muted-foreground">pontos</p>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </CardContent>
-            </Card>
-          )}
+          <Card className="bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm border border-gray-200 dark:border-gray-700">
+            <CardContent className="p-6">
+              <h2 className="text-xl font-semibold mb-4 text-foreground dark:text-white flex items-center gap-2">
+                <TrendingUp className="h-5 w-5" />
+                Tabela de Vendedores Ativos
+              </h2>
+              <div className="overflow-x-auto">
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Posição</TableHead>
+                      <TableHead>Vendedor</TableHead>
+                      <TableHead className="text-center">Vendas ganhas</TableHead>
+                      <TableHead className="text-right">Valor total (Ganho)</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {dadosParaMostrar.map((user) => (
+                      <TableRow key={user.id} data-testid={`rank-row-${user.posicao}`}>
+                        <TableCell>
+                          <Badge variant="secondary" className="w-9 h-9 flex items-center justify-center rounded-full">
+                            {user.posicao}
+                          </Badge>
+                        </TableCell>
+                        <TableCell>
+                          <div className="flex items-center gap-3">
+                            <Avatar className="h-9 w-9">
+                              <AvatarFallback className="bg-primary/10 text-primary font-semibold">
+                                {getInitials(user.nome)}
+                              </AvatarFallback>
+                            </Avatar>
+                            <div>
+                              <p className="font-medium text-foreground dark:text-white" data-testid={`text-name-${user.posicao}`}>
+                                {user.nome}
+                              </p>
+                              <p className="text-xs text-muted-foreground">{user.email}</p>
+                            </div>
+                          </div>
+                        </TableCell>
+                        <TableCell className="text-center">
+                          {user.vendasConcluidas}{" "}
+                          {user.vendasConcluidas === 1 ? "venda" : "vendas"}
+                        </TableCell>
+                        <TableCell className="text-right" data-testid={`text-valor-total-${user.posicao}`}>
+                          {formatCurrency(user.valorTotal)}
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </div>
+            </CardContent>
+          </Card>
         </>
       )}
     </div>

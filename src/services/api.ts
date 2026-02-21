@@ -34,6 +34,7 @@ async function apiRequest(endpoint: string, options: RequestInit = {}) {
   const url = `${API_BASE_URL}${endpoint}`;
 
   const config: RequestInit = {
+    credentials: 'include',
     headers: {
       'Content-Type': 'application/json',
       ...options.headers,
@@ -41,30 +42,19 @@ async function apiRequest(endpoint: string, options: RequestInit = {}) {
     ...options,
   };
 
-  // Adicionar token de autenticação se disponível
-  const token = localStorage.getItem('authToken');
-  if (token) {
-    config.headers = {
-      ...config.headers,
-      'Authorization': `Bearer ${token}`,
-    };
-  }
-
   try {
     const response = await fetch(url, config);
 
     if (!response.ok) {
-      if (response.status === 401) {
-        // Token inválido ou expirado, redirecionar para login
-        localStorage.removeItem('authToken');
-        window.location.href = '/login';
-        throw new Error('Sessão expirada. Redirecionando para login...');
-      }
       const errorData = await response.json().catch(() => ({}));
-      throw new ApiError(
-        errorData.erro || `HTTP ${response.status}: ${response.statusText}`,
-        response.status
-      );
+      const message =
+        errorData.message ||
+        errorData.erro ||
+        `HTTP ${response.status}: ${response.statusText}`;
+      if (response.status === 401 && !endpoint.startsWith('/auth/login')) {
+        window.location.href = '/login';
+      }
+      throw new ApiError(message, response.status);
     }
 
     const contentType = response.headers.get('content-type');
@@ -77,7 +67,7 @@ async function apiRequest(endpoint: string, options: RequestInit = {}) {
     if (error instanceof ApiError) {
       throw error;
     }
-    throw new ApiError(`Erro de conexão: ${error}`, 0);
+    throw new ApiError('Não foi possível conectar ao servidor. Verifique sua conexão e tente novamente.', 0);
   }
 }
 
@@ -96,29 +86,17 @@ export interface RegisterData {
 }
 
 export async function login(credentials: LoginCredentials) {
-  const response = await apiRequest('/auth/login', {
+  return await apiRequest('/auth/login', {
     method: 'POST',
     body: JSON.stringify(credentials),
   });
-
-  if (response.token) {
-    localStorage.setItem('authToken', response.token);
-  }
-
-  return response;
 }
 
 export async function register(userData: RegisterData) {
-  const response = await apiRequest('/auth/register', {
+  return await apiRequest('/auth/register', {
     method: 'POST',
     body: JSON.stringify(userData),
   });
-
-  if (response.token) {
-    localStorage.setItem('authToken', response.token);
-  }
-
-  return response;
 }
 
 export async function logout() {
@@ -126,8 +104,6 @@ export async function logout() {
     await apiRequest('/auth/logout', { method: 'POST' });
   } catch (error) {
     console.error('Erro ao fazer logout:', error);
-  } finally {
-    localStorage.removeItem('authToken');
   }
 }
 
@@ -231,6 +207,7 @@ export interface Oportunidade {
   prioridade?: string;
   probabilidade?: number;
   dataPrevisao?: string;
+  pipeline?: string;
   clienteId: string;
   usuarioId: string;
   empresaId?: string;
@@ -250,10 +227,40 @@ export interface Oportunidade {
   };
 }
 
+export interface PipelineKanban {
+  id: string;
+  slug: string;
+  nome: string;
+  etapasPersonalizadas?: any;
+  ordemEtapas?: any;
+  createdAt?: string;
+  updatedAt?: string;
+}
+
 export async function buscarOportunidades(params: any = {}) {
   const queryParams = new URLSearchParams(params).toString();
   const endpoint = queryParams ? `/oportunidades?${queryParams}` : '/oportunidades';
   return await apiRequest(endpoint);
+}
+
+export interface ResultadoBuscaGlobal {
+  clientes: Cliente[];
+  tarefas: Tarefa[];
+  oportunidades: Oportunidade[];
+}
+
+export async function buscarGlobal(termo: string): Promise<ResultadoBuscaGlobal> {
+  const [clientes, tarefas, oportunidades] = await Promise.all([
+    buscarClientes({ q: termo }),
+    buscarTarefas({ q: termo }),
+    buscarOportunidades({ q: termo }),
+  ]);
+
+  return {
+    clientes: Array.isArray(clientes) ? clientes : [],
+    tarefas: Array.isArray(tarefas) ? tarefas : [],
+    oportunidades: Array.isArray(oportunidades) ? oportunidades : [],
+  };
 }
 
 export async function criarOportunidade(oportunidadeData: any) {
@@ -276,10 +283,59 @@ export async function excluirOportunidade(id: string) {
   });
 }
 
+export async function buscarPipelinesKanban() {
+  return await apiRequest('/oportunidades/pipelines');
+}
+
+export async function buscarPipelineAtivoKanban() {
+  return await apiRequest('/oportunidades/pipeline-ativo');
+}
+
+export async function salvarPipelineAtivoKanban(pipelineAtivo: string) {
+  return await apiRequest('/oportunidades/pipeline-ativo', {
+    method: 'PUT',
+    body: JSON.stringify({ pipelineAtivo }),
+  });
+}
+
+export async function criarPipelineKanban(data: { nome: string }) {
+  return await apiRequest('/oportunidades/pipelines', {
+    method: 'POST',
+    body: JSON.stringify(data),
+  });
+}
+
+export async function salvarConfigKanban(
+  pipelineSlug: string,
+  config: { etapasPersonalizadas: any; ordemEtapas: any; nome?: string }
+) {
+  return await apiRequest(`/oportunidades/pipelines/${pipelineSlug}/config`, {
+    method: 'PUT',
+    body: JSON.stringify(config),
+  });
+}
+
 // ==================== DASHBOARD ====================
 
 export async function buscarEstatisticasDashboard() {
   return await apiRequest('/dashboard/estatisticas');
+}
+
+// ==================== RANKING ====================
+
+export async function buscarRankingVendas() {
+  return await apiRequest('/ranking');
+}
+
+export async function buscarEmpresaAtual() {
+  return await apiRequest('/empresas/me');
+}
+
+export async function criarUsuarioEmpresa(data: { nome: string; email: string; senha: string }) {
+  return await apiRequest('/empresas/usuarios', {
+    method: 'POST',
+    body: JSON.stringify(data)
+  });
 }
 
 // ==================== RELATÓRIOS ====================
@@ -327,7 +383,7 @@ export async function excluirWebhook(id: string) {
 // ==================== CONFIGURAÇÕES DE USUÁRIO ====================
 
 export async function buscarDadosUsuario() {
-  return await apiRequest('/usuarios/perfil');
+  return await apiRequest('/auth/me');
 }
 
 export async function atualizarDadosUsuario(userData: any) {

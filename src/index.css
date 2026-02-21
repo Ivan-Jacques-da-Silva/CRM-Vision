@@ -30,26 +30,25 @@
 
     --border: 214.3 31.8% 91.4%;
     --input: 214.3 31.8% 91.4%;
-    --ring: 258 88% 66%;
+    --ring: 222.2 47.4% 40%;
 
     --radius: 0.75rem;
 
-    --sidebar-background: 0 0% 100%;
-    --sidebar-foreground: 240 5.3% 26.1%;
-    --sidebar-primary: 258 88% 66%;
+    --sidebar-background: 210 20% 98%;
+    --sidebar-foreground: 222 25% 20%;
+    --sidebar-primary: 221 39% 31%;
     --sidebar-primary-foreground: 0 0% 100%;
-    --sidebar-accent: 240 4.8% 95.9%;
-    --sidebar-accent-foreground: 240 5.9% 10%;
-    --sidebar-border: 220 13% 91%;
-    --sidebar-ring: 258 88% 66%;
+    --sidebar-accent: 214 25% 93%;
+    --sidebar-accent-foreground: 222 35% 16%;
+    --sidebar-border: 214 24% 88%;
+    --sidebar-ring: 220 35% 44%;
 
-    /* Glass effect variables for light theme */
-    --glass-bg: rgba(255, 255, 255, 0.25);
-    --glass-border: rgba(255, 255, 255, 0.3);
-    --glass-shadow: rgba(31, 38, 135, 0.15);
+    --glass-bg: rgba(255, 255, 255, 0.9);
+    --glass-border: rgba(148, 163, 184, 0.4);
+    --glass-shadow: rgba(15, 23, 42, 0.08);
     --glass-inset: rgba(255, 255, 255, 0.5);
-    --hover-glass: rgba(139, 92, 246, 0.1);
-    --active-glass: rgba(139, 92, 246, 0.15);
+    --hover-glass: rgba(15, 23, 42, 0.04);
+    --active-glass: rgba(15, 23, 42, 0.06);
   }
 
   .dark {
@@ -79,24 +78,23 @@
 
     --border: 217.2 32.6% 17.5%;
     --input: 217.2 32.6% 17.5%;
-    --ring: 258 88% 66%;
+    --ring: 222.2 47.4% 60%;
 
-    --sidebar-background: 222.2 84% 4.9%;
-    --sidebar-foreground: 210 40% 98%;
-    --sidebar-primary: 258 88% 66%;
-    --sidebar-primary-foreground: 0 0% 100%;
-    --sidebar-accent: 217.2 32.6% 17.5%;
-    --sidebar-accent-foreground: 210 40% 98%;
-    --sidebar-border: 217.2 32.6% 17.5%;
-    --sidebar-ring: 258 88% 66%;
+    --sidebar-background: 222 32% 10%;
+    --sidebar-foreground: 210 25% 92%;
+    --sidebar-primary: 210 45% 68%;
+    --sidebar-primary-foreground: 222 47% 9%;
+    --sidebar-accent: 222 24% 16%;
+    --sidebar-accent-foreground: 210 30% 96%;
+    --sidebar-border: 222 20% 22%;
+    --sidebar-ring: 214 35% 68%;
 
-    /* Glass effect variables for dark theme */
-    --glass-bg: rgba(15, 23, 42, 0.4);
-    --glass-border: rgba(71, 85, 105, 0.5);
-    --glass-shadow: rgba(0, 0, 0, 0.4);
+    --glass-bg: rgba(15, 23, 42, 0.9);
+    --glass-border: rgba(51, 65, 85, 0.8);
+    --glass-shadow: rgba(0, 0, 0, 0.5);
     --glass-inset: rgba(255, 255, 255, 0.15);
-    --hover-glass: rgba(139, 92, 246, 0.2);
-    --active-glass: rgba(139, 92, 246, 0.25);
+    --hover-glass: rgba(15, 23, 42, 0.4);
+    --active-glass: rgba(15, 23, 42, 0.6);
   }
 }
 
@@ -115,30 +113,19 @@
 
 @layer components {
   .card-hover {
-    @apply transition-all duration-300 hover:shadow-lg;
+    @apply transition-all duration-300 hover:shadow-md;
   }
 
   .glass-card {
-    background: var(--glass-bg);
-    backdrop-filter: blur(16px);
-    -webkit-backdrop-filter: blur(16px);
-    border: 1px solid var(--glass-border);
-    box-shadow: 0 4px 16px 0 var(--glass-shadow);
+    background: hsl(var(--card));
+    border: 1px solid hsl(var(--border));
+    box-shadow: 0 1px 3px 0 var(--glass-shadow);
     transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
   }
 
   .glass-card:hover:not([data-rfd-drag-handle-dragging="true"]) {
-    border-color: rgba(255, 255, 255, 0.2);
-    box-shadow: 0 6px 20px 0 var(--glass-shadow);
-  }
-
-  /* Light theme specific borders for Kanban cards */
-  :root .glass-card {
-    border: 1px solid rgba(0, 0, 0, 0.1);
-  }
-
-  :root .glass-card:hover {
-    border-color: rgba(0, 0, 0, 0.15);
+    border-color: hsl(var(--border));
+    box-shadow: 0 4px 8px 0 var(--glass-shadow);
   }
 
   /* Kanban column headers in light theme */
@@ -156,20 +143,44 @@
   }
 
   .glass-button {
-    background: var(--glass-bg);
-    backdrop-filter: blur(12px);
-    -webkit-backdrop-filter: blur(12px);
-    border: 1px solid var(--glass-border);
+    background: hsl(var(--background));
+    border: 1px solid hsl(var(--border));
     transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
   }
 
 
   .glass-button:active {
-    background: var(--active-glass);
+    background: hsl(var(--muted));
   }
 
   .tag {
     @apply inline-flex items-center rounded-full px-3 py-1 text-xs font-medium glass-card;
+  }
+
+  .sidebar-surface {
+    background: linear-gradient(
+      180deg,
+      hsl(var(--sidebar-background) / 0.96) 0%,
+      hsl(var(--sidebar-background) / 0.9) 100%
+    );
+    border-right: 1px solid hsl(var(--sidebar-border) / 0.75);
+    box-shadow: 2px 0 18px -12px hsl(var(--foreground) / 0.25);
+    backdrop-filter: blur(10px);
+  }
+
+  .sidebar-nav-item {
+    color: hsl(var(--sidebar-foreground));
+  }
+
+  .sidebar-nav-item:hover {
+    background: hsl(var(--sidebar-accent) / 0.55);
+    color: hsl(var(--sidebar-accent-foreground));
+  }
+
+  .sidebar-nav-item-active {
+    background: hsl(var(--sidebar-accent) / 0.82);
+    color: hsl(var(--sidebar-accent-foreground));
+    box-shadow: inset 0 0 0 1px hsl(var(--sidebar-border));
   }
 
 }
@@ -632,35 +643,26 @@
 
 [data-rfd-drag-handle-dragging="true"] {
   cursor: grabbing !important;
-  opacity: 0.8 !important;
+  opacity: 0.9 !important;
   z-index: 9999 !important;
-  box-shadow: 0 8px 25px rgba(0, 0, 0, 0.25) !important;
+  box-shadow: 0 8px 20px rgba(15, 23, 42, 0.3) !important;
 }
 
-/* Resetar estilos que podem interferir com o drag */
 .glass-card[data-rfd-drag-handle-dragging="true"] {
-  backdrop-filter: none !important;
-  -webkit-backdrop-filter: none !important;
-  background: rgba(255, 255, 255, 0.9) !important;
+  background: hsl(var(--card)) !important;
 }
 
 .dark .glass-card[data-rfd-drag-handle-dragging="true"] {
-  background: rgba(0, 0, 0, 0.9) !important;
+  background: hsl(var(--card)) !important;
 }
-
-/* Removido regra global que interferia com o posicionamento da biblioteca */
 
 /* Enhanced styling for dragged cards */
 [data-rfd-drag-handle-dragging="true"] .glass-card {
-  background: rgba(255, 255, 255, 0.95) !important;
-  border: 1px solid rgba(59, 130, 246, 0.5) !important;
-  backdrop-filter: blur(8px) !important;
-  -webkit-backdrop-filter: blur(8px) !important;
+  background: hsl(var(--card)) !important;
+  border: 1px solid hsl(var(--ring)) !important;
 }
 
 .dark [data-rfd-drag-handle-dragging="true"] .glass-card {
-  background: rgba(30, 30, 30, 0.95) !important;
-  border: 1px solid rgba(59, 130, 246, 0.5) !important;
-  backdrop-filter: blur(8px) !important;
-  -webkit-backdrop-filter: blur(8px) !important;
+  background: hsl(var(--card)) !important;
+  border: 1px solid hsl(var(--ring)) !important;
 }

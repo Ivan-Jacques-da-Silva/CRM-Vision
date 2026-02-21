@@ -4,12 +4,13 @@ import { resolve } from 'path';
 import express from 'express';
 import cors from 'cors';
 import { PrismaClient } from '@prisma/client';
-import { detectServerEnvironment, getCorsOrigins, logEnvironmentConfig } from '../../shared/environment';
+import { detectServerEnvironment, getCorsOrigins, logEnvironmentConfig } from './environment';
 import authRoutes from './routes/auth';
 import clientesRoutes from './routes/clientes';
 import tarefasRoutes from './routes/tarefas';
 import oportunidadesRoutes from './routes/oportunidades';
 import trialRoutes from './routes/trial';
+import empresasRoutes from './routes/empresas';
 import rankingRoutes from './routes/ranking';
 
 // Configurar dotenv para carregar .env de múltiplos locais
@@ -42,33 +43,7 @@ if (!process.env.JWT_SECRET) {
 const allowedOrigins = getCorsOrigins(environmentConfig);
 
 app.use(cors({
-  origin: (origin, callback) => {
-    // Permite requisições sem origin (ex: Postman, mobile apps)
-    if (!origin) return callback(null, true);
-    
-    // Verificar lista exata primeiro
-    if (allowedOrigins.includes(origin)) {
-      return callback(null, true);
-    }
-    
-    // Para Replit, verificar padrões dinâmicos
-    if (environmentConfig.isReplit) {
-      const replitPattern = /^https:\/\/[\w-]+-[\w-]+(-\d+)?\.(replit\.app|repl\.co)$/;
-      if (replitPattern.test(origin)) {
-        return callback(null, true);
-      }
-    }
-    
-    // Para desenvolvimento, ser mais permissivo com localhost e IPs internos
-    if (environmentConfig.isDevelopment) {
-      const devPattern = /^https?:\/\/(localhost|127\.0\.0\.1|0\.0\.0\.0|172\.\d+\.\d+\.\d+)(:\d+)?$/;
-      if (devPattern.test(origin)) {
-        return callback(null, true);
-      }
-    }
-    
-    callback(new Error('Não permitido pelo CORS'));
-  },
+  origin: true,
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization']
@@ -90,6 +65,7 @@ app.use('/api/tarefas', tarefasRoutes);
 app.use('/api/oportunidades', oportunidadesRoutes);
 app.use('/api/trial', trialRoutes);
 app.use('/api/ranking', rankingRoutes);
+app.use('/api/empresas', empresasRoutes);
 
 // Rota de teste
 app.get('/api/health', (req: express.Request, res: express.Response) => {

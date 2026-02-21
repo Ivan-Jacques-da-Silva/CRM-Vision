@@ -53,7 +53,7 @@ const App = () => (
           <Route path="/clientes" element={<Navigate to="/clients" replace />} />
           
           {/* Vendas/Oportunidades */}
-          <Route path="/sales" element={<AppLayout><Sales /></AppLayout>} />
+          <Route path="/sales" element={<AppLayout fullWidth><Sales /></AppLayout>} />
           <Route path="/oportunidades" element={<Navigate to="/sales" replace />} />
           <Route path="/vendas" element={<Navigate to="/sales" replace />} />
           <Route path="/pipeline" element={<Navigate to="/sales" replace />} />

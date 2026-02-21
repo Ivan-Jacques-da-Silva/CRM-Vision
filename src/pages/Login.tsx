@@ -23,44 +23,15 @@ export const Login: React.FC = () => {
     e.preventDefault();
     setIsLoading(true);
 
-    // Login demo - credenciais aceitas
-    const isDemo = (formData.email === 'demo@crm.com' && formData.senha === 'demo123') ||
-                   (formData.email === 'admin@crm.com' && formData.senha === 'admin123');
-
     try {
-      if (isDemo) {
-        // Simular delay de login
-        await new Promise(resolve => setTimeout(resolve, 1000));
-        
-        // Salvar dados demo no localStorage
-        const demoUser = {
-          id: 1,
-          nome: formData.email === 'admin@crm.com' ? 'Admin Demo' : 'Usuario Demo',
-          email: formData.email,
-          empresaId: 1,
-          token: 'demo-token-' + Date.now()
-        };
-        
-        localStorage.setItem('crm-user', JSON.stringify(demoUser));
-        localStorage.setItem('crm-token', demoUser.token);
-        
-        toast({
-          title: "Login demo realizado com sucesso!",
-          description: `Bem-vindo, ${demoUser.nome}!`,
-        });
-        
-        navigate('/dashboard');
-      } else {
-        // Tentar login real
-        const response = await login(formData);
-        
-        toast({
-          title: "Login realizado com sucesso!",
-          description: `Bem-vindo, ${response.usuario?.nome || 'usuário'}!`,
-        });
-        
-        navigate('/dashboard');
-      }
+      const response = await login(formData);
+      
+      toast({
+        title: "Login realizado com sucesso!",
+        description: `Bem-vindo, ${response.usuario?.nome || 'usuário'}!`,
+      });
+      
+      navigate('/dashboard');
     } catch (error) {
       console.error('Erro no login:', error);
       
@@ -91,13 +62,6 @@ export const Login: React.FC = () => {
       ...prev,
       [e.target.name]: e.target.value
     }));
-  };
-
-  const fillDemoCredentials = (email: string, password: string) => {
-    setFormData({
-      email: email,
-      senha: password
-    });
   };
 
   return (
@@ -187,31 +151,6 @@ export const Login: React.FC = () => {
           </form>
 
           <div className="mt-6 text-center space-y-3">
-            <div className="text-sm text-muted-foreground">
-              <strong>Acesso Demo - Clique para preencher:</strong>
-            </div>
-            <div className="space-y-2">
-              <Button
-                type="button"
-                variant="outline"
-                size="sm"
-                className="w-full text-xs"
-                onClick={() => fillDemoCredentials('demo@crm.com', 'demo123')}
-                data-testid="button-demo-user"
-              >
-                📧 demo@crm.com | 🔑 demo123
-              </Button>
-              <Button
-                type="button"
-                variant="outline"
-                size="sm"
-                className="w-full text-xs"
-                onClick={() => fillDemoCredentials('admin@demo.com', '123456')}
-                data-testid="button-admin-user"
-              >
-                📧 admin@demo.com | 🔑 123456
-              </Button>
-            </div>
             <Link 
               to="/plans" 
               className="inline-block text-sm text-muted-foreground hover:underline mt-4"

@@ -358,7 +358,7 @@ class SetupBanco {
       // Verificar se há usuários (nome correto da tabela)
       const r = await this.clienteCRM.query(`SELECT COUNT(*)::int AS n FROM usuarios`)
       if (r.rows[0].n > 0) {
-        this.log('🗑️', 'Dados existentes detectados. Limpando para recriar...')
+        this.log('🗑️', 'Dados existentes detectados. Limpando para recriar usuários padrão...')
         await this.limparDadosExistentes()
       }
     } catch (e) {
@@ -368,56 +368,65 @@ class SetupBanco {
     try {
       const bcrypt = require('bcryptjs')
 
-      // Criar empresa demo (nome correto da tabela)
+      const agora = new Date()
+      const trialEnd = new Date(agora.getTime() + 30 * 24 * 60 * 60 * 1000)
+      const empresaId = 'empresa-vision'
+
+      // Criar empresa padrão
       await this.clienteCRM.query(`
         INSERT INTO "empresas" (id, nome, "createdAt", "updatedAt") 
-        VALUES ('demo-empresa', 'Vision CRM Demo', NOW(), NOW()) 
-        ON CONFLICT (id) DO NOTHING
-      `)
+        VALUES ($1, $2, NOW(), NOW()) 
+        ON CONFLICT (id) DO UPDATE SET
+          nome = EXCLUDED.nome,
+          "updatedAt" = NOW()
+      `, [empresaId, 'Vision CRM'])
 
-      // Criar usuário admin com trial válido por 30 dias (email correto)
-      const hash = await bcrypt.hash('123456', 10)
-      const agora = new Date()
-      const trialEnd = new Date(agora.getTime() + 30 * 24 * 60 * 60 * 1000) // 30 dias
+      const senhaIvan = await bcrypt.hash('Iv4n!24', 10)
+      const senhaComercial = await bcrypt.hash('C0m3rc!4', 10)
 
       await this.clienteCRM.query(`
         INSERT INTO "usuarios" (
-          id, nome, email, senha, "empresaId", plano, "trialStart", "trialEnd", 
+          id, nome, email, senha, "empresaId", plano, "trialStart", "trialEnd",
           "isActive", "createdAt", "updatedAt"
-        ) 
-        VALUES (
-          'demo-user', 'Admin Vision', 'admin@demo.com', $1, 'demo-empresa', 
-          'PREMIUM', $2, $3, true, NOW(), NOW()
         )
-        ON CONFLICT (email) DO NOTHING
-      `, [hash, agora, trialEnd])
+        VALUES (
+          'usuario-ivan', 'Ivan', 'ivan@vision.dev.br', $1, $2,
+          'PREMIUM', $3, $4, true, NOW(), NOW()
+        )
+        ON CONFLICT (email) DO UPDATE SET
+          nome = EXCLUDED.nome,
+          senha = EXCLUDED.senha,
+          "empresaId" = EXCLUDED."empresaId",
+          plano = EXCLUDED.plano,
+          "trialStart" = EXCLUDED."trialStart",
+          "trialEnd" = EXCLUDED."trialEnd",
+          "isActive" = EXCLUDED."isActive",
+          "updatedAt" = NOW()
+      `, [senhaIvan, empresaId, agora, trialEnd])
 
-      // Criar clientes demo (nome correto da tabela)
       await this.clienteCRM.query(`
-        INSERT INTO "clientes" (
-          id, nome, email, telefone, "nomeEmpresa", cargo, status, 
-          "usuarioId", "empresaId", "createdAt", "updatedAt"
-        ) 
-        VALUES 
-          (
-            'cliente-demo-1', 'João Silva', 'joao@empresa.com', '(11) 99999-9999', 
-            'Empresa ABC', 'Diretor', 'ATIVO', 'demo-user', 'demo-empresa', NOW(), NOW()
-          ),
-          (
-            'cliente-demo-2', 'Maria Santos', 'maria@startup.com', '(11) 88888-8888', 
-            'Startup XYZ', 'CEO', 'ATIVO', 'demo-user', 'demo-empresa', NOW(), NOW()
-          )
-        ON CONFLICT (id) DO NOTHING
-      `)
+        INSERT INTO "usuarios" (
+          id, nome, email, senha, "empresaId", plano, "trialStart", "trialEnd",
+          "isActive", "createdAt", "updatedAt"
+        )
+        VALUES (
+          'usuario-comercial', 'Comercial Vision', 'comercial@vision.dev.br', $1, $2,
+          'PREMIUM', $3, $4, true, NOW(), NOW()
+        )
+        ON CONFLICT (email) DO UPDATE SET
+          nome = EXCLUDED.nome,
+          senha = EXCLUDED.senha,
+          "empresaId" = EXCLUDED."empresaId",
+          plano = EXCLUDED.plano,
+          "trialStart" = EXCLUDED."trialStart",
+          "trialEnd" = EXCLUDED."trialEnd",
+          "isActive" = EXCLUDED."isActive",
+          "updatedAt" = NOW()
+      `, [senhaComercial, empresaId, agora, trialEnd])
 
-      // Criar dados exemplo para o Kanban
-      await this.seedKanban()
-
-      this.log('✅', `Usuário criado com sucesso!`)
-      this.log('📧', `Email: admin@demo.com`)
-      this.log('🔐', `Senha: 123456`)
-      this.log('🎯', `Plano: PREMIUM (30 dias)`)
-      this.log('📅', `Trial válido até: ${trialEnd.toLocaleDateString('pt-BR')}`)
+      this.log('✅', 'Usuários padrão criados com sucesso!')
+      this.log('📧', 'ivan@vision.dev.br / Iv4n!24')
+      this.log('📧', 'comercial@vision.dev.br / C0m3rc!4')
     } catch (e) {
       this.log('⚠️', `Seed falhou: ${e.message}`)
       console.error(e)
@@ -805,10 +814,8 @@ class SetupBanco {
         // Rodar Prisma com auto-correção
         await this.rodarPrismaInteligente()
 
+        // Criar empresa e usuários padrão
         await this.seedBasico()
-
-        // Executar seed completo usando o seed-data.js
-        await this.executarSeedCompleto()
 
         await this.testarConexao()
         const schemaValido = await this.validarSchema()
@@ -825,9 +832,9 @@ class SetupBanco {
         console.log('')
         this.log('🔗', `Database URL: ${montarDatabaseUrl()}`)
         this.log('🚀', 'Para iniciar: npm run dev')
-        this.log('👤', 'Login demo: admin@demo.com / 123456')
-        this.log('📊', 'Kanban: Dados exemplo incluídos')
-        this.log('🌱', 'Dados completos: empresas, usuários, clientes, oportunidades e tarefas')
+        this.log('👤', 'Usuários criados:')
+        this.log('   - ivan@vision.dev.br')
+        this.log('   - comercial@vision.dev.br')
         console.log('')
 
         return // Sucesso! Sair do loop

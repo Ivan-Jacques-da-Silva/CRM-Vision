@@ -14,13 +14,14 @@ import { useIsMobile } from '@/hooks/use-mobile';
 
 interface AppLayoutProps {
   children: React.ReactNode;
+  fullWidth?: boolean;
 }
 
 /**
  * Renderiza o layout principal da aplicação
  * @param children - Conteúdo principal a ser renderizado dentro do layout
  */
-const AppLayout: React.FC<AppLayoutProps> = ({ children }) => {
+const AppLayout: React.FC<AppLayoutProps> = ({ children, fullWidth = false }) => {
   const isMobile = useIsMobile(); // Detecta se é dispositivo móvel
   const [sidebarOpen, setSidebarOpen] = useState(!isMobile); // Inicialmente fecha em dispositivos móveis
 
@@ -76,7 +77,7 @@ const AppLayout: React.FC<AppLayoutProps> = ({ children }) => {
               ${isMobile ? 'p-4' : 'p-6'}
             `}
           >
-            <div className={`container mx-auto ${isMobile ? 'px-2' : 'px-4'}`}>
+            <div className={`${fullWidth ? 'w-full' : 'container mx-auto'} ${isMobile ? 'px-2' : 'px-4'}`}>
               <div className={`bg-card/50 backdrop-blur-sm border border-border/50 rounded-xl min-h-[calc(100vh-200px)] shadow-sm ${isMobile ? 'p-4' : 'p-6'}`}>
                 {children}
               </div>

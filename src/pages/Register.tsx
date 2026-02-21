@@ -29,7 +29,6 @@ export const Register: React.FC = () => {
     e.preventDefault();
     setIsLoading(true);
 
-    // Validações
     if (formData.senha !== formData.confirmarSenha) {
       toast({
         title: "Erro de validação",
@@ -44,6 +43,16 @@ export const Register: React.FC = () => {
       toast({
         title: "Erro de validação",
         description: "Você deve aceitar os termos de uso",
+        variant: "destructive"
+      });
+      setIsLoading(false);
+      return;
+    }
+
+    if (!formData.empresaNome.trim()) {
+      toast({
+        title: "Erro de validação",
+        description: "O nome da empresa é obrigatório para criar a conta",
         variant: "destructive"
       });
       setIsLoading(false);
@@ -145,7 +154,7 @@ export const Register: React.FC = () => {
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="empresaNome">Nome da Empresa (Opcional)</Label>
+              <Label htmlFor="empresaNome">Nome da Empresa</Label>
               <Input
                 id="empresaNome"
                 name="empresaNome"
@@ -153,6 +162,7 @@ export const Register: React.FC = () => {
                 placeholder="Nome da sua empresa"
                 value={formData.empresaNome}
                 onChange={handleChange}
+                required
               />
             </div>
 

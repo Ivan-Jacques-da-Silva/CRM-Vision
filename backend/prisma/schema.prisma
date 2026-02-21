@@ -16,6 +16,7 @@ model Usuario {
   email     String   @unique
   senha     String
   empresaId String?
+  kanbanPipelineAtivo String @default("principal")
   plano     String   @default("TRIAL") // TRIAL, PREMIUM, EXPIRADO
   trialStart DateTime @default(now())
   trialEnd   DateTime?
@@ -41,8 +42,25 @@ model Empresa {
   usuarios      Usuario[]
   clientes      Cliente[]
   oportunidades Oportunidade[]
+  pipelinesKanban PipelineKanban[]
 
   @@map("empresas")
+}
+
+model PipelineKanban {
+  id                  String   @id @default(cuid())
+  empresaId           String
+  slug                String
+  nome                String
+  etapasPersonalizadas Json?
+  ordemEtapas         Json?
+  createdAt           DateTime @default(now())
+  updatedAt           DateTime @updatedAt
+
+  empresa             Empresa @relation(fields: [empresaId], references: [id])
+
+  @@unique([empresaId, slug])
+  @@map("pipelines_kanban")
 }
 
 model Cliente {

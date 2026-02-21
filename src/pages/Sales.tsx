@@ -1,9 +1,69 @@
 
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { KanbanBoard } from '@/components/sales/KanbanBoard';
 import { Target, TrendingUp, DollarSign } from 'lucide-react';
+import { buscarOportunidades } from '@/services/api';
+
+interface SalesStats {
+  totalGanhos: number;
+  ganhosMes: number;
+  conversao: number;
+}
 
 export const Sales = () => {
+  const [stats, setStats] = useState<SalesStats>({ totalGanhos: 0, ganhosMes: 0, conversao: 0 });
+
+  useEffect(() => {
+    const carregarStats = async () => {
+      try {
+        const dados = await buscarOportunidades();
+        if (!Array.isArray(dados)) {
+          return;
+        }
+
+        let totalGanhos = 0;
+        let ganhosMes = 0;
+        let total = 0;
+        let ganhos = 0;
+        const agora = new Date();
+
+        dados.forEach((o: any) => {
+          total += 1;
+          if (o.status === 'GANHO') {
+            ganhos += 1;
+            const valor = Number(o.valorFechado ?? o.valor ?? 0);
+            totalGanhos += valor;
+
+            const referenciaStr = o.dataFechamento ?? o.updatedAt ?? o.createdAt;
+            const referencia = referenciaStr ? new Date(referenciaStr) : null;
+            if (referencia && referencia.getMonth() === agora.getMonth() && referencia.getFullYear() === agora.getFullYear()) {
+              ganhosMes += valor;
+            }
+          }
+        });
+
+        const conversao = total > 0 ? Math.round((ganhos / total) * 100) : 0;
+
+        setStats({ totalGanhos, ganhosMes, conversao });
+      } catch (error) {
+        console.error('Erro ao carregar métricas de vendas:', error);
+      }
+    };
+
+    carregarStats();
+  }, []);
+
+  const totalGanhosFormatado = stats.totalGanhos.toLocaleString('pt-BR', {
+    style: 'currency',
+    currency: 'BRL',
+    maximumFractionDigits: 0,
+  });
+  const ganhosMesFormatado = stats.ganhosMes.toLocaleString('pt-BR', {
+    style: 'currency',
+    currency: 'BRL',
+    maximumFractionDigits: 0,
+  });
+
   return (
     <div className="space-y-4">
       {/* Compact Header with Stats */}
@@ -25,8 +85,11 @@ export const Sales = () => {
               <div className="flex items-center gap-1.5 sm:gap-2">
                 <DollarSign className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-green-500 group-hover:scale-110 transition-transform flex-shrink-0" />
                 <div className="min-w-0">
-                  <p className="text-xs text-muted-foreground">Pipeline</p>
-                  <p className="text-xs sm:text-sm font-bold text-green-500">R$ 45k</p>
+                  <p className="text-xs text-muted-foreground">Vendas concluídas</p>
+                  <div className="text-xs sm:text-sm font-bold text-green-500">
+                    <span className="block">Mês: {ganhosMesFormatado}</span>
+                    <span className="block">Total: {totalGanhosFormatado}</span>
+                  </div>
                 </div>
               </div>
             </div>
@@ -36,7 +99,9 @@ export const Sales = () => {
                 <TrendingUp className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-blue-500 group-hover:scale-110 transition-transform flex-shrink-0" />
                 <div className="min-w-0">
                   <p className="text-xs text-muted-foreground">Conversão</p>
-                  <p className="text-xs sm:text-sm font-bold text-blue-500">68%</p>
+                  <p className="text-xs sm:text-sm font-bold text-blue-500">
+                    {stats.conversao}%
+                  </p>
                 </div>
               </div>
             </div>

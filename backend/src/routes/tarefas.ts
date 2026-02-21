@@ -10,23 +10,31 @@ const prisma = new PrismaClient();
 router.use(authMiddleware);
 router.use(checkTrialStatus);
 
-// GET /api/tarefas
+// GET /api/tarefas - Tarefas visíveis para todos usuários da mesma empresa
 router.get('/', async (req: AuthenticatedRequest, res: Response) => {
   try {
-    const whereClause: Prisma.TarefaWhereInput = {
-      usuarioId: req.userId!,
-      ...(req.user?.empresaId && {
-        OR: [
-          { cliente: { empresaId: req.user.empresaId } },
-          { cliente: null },
-        ],
-      }),
-    };
+    const { q } = req.query as { q?: string };
+
+    const baseWhere: Prisma.TarefaWhereInput = req.user?.empresaId
+      ? { usuario: { empresaId: req.user.empresaId } }
+      : { usuarioId: req.userId! };
+
+    const searchWhere: Prisma.TarefaWhereInput =
+      q && q.trim()
+        ? {
+            OR: [
+              { titulo: { contains: q, mode: 'insensitive' } },
+              { descricao: { contains: q, mode: 'insensitive' } }
+            ]
+          }
+        : {};
 
     const tarefas = await prisma.tarefa.findMany({
-      where: whereClause,
+      where: {
+        ...baseWhere,
+        ...searchWhere
+      },
       include: {
-        // use apenas include (sem select no mesmo nível)
         cliente: {
           include: {
             empresa: { select: { nome: true } },
@@ -56,10 +64,70 @@ router.post('/', requireActiveTrial, async (req: AuthenticatedRequest, res: Resp
       dataVencimento,
       clienteId,
       oportunidadeId,
-    } = req.body;
+      usuarioId,
+    } = req.body as {
+      titulo: string;
+      descricao?: string;
+      status?: string;
+      prioridade?: string;
+      dataVencimento: string | Date;
+      clienteId?: string | null;
+      oportunidadeId?: string | null;
+      usuarioId?: string;
+    };
 
     if (!titulo || !dataVencimento) {
       return res.status(400).json({ message: 'Título e data de vencimento são obrigatórios' });
+    }
+
+    if (clienteId && req.user?.empresaId) {
+      const cliente = await prisma.cliente.findFirst({
+        where: {
+          id: clienteId,
+          empresaId: req.user.empresaId,
+        },
+      });
+
+      if (!cliente) {
+        return res
+          .status(404)
+          .json({ message: 'Cliente não encontrado ou não pertence à sua empresa' });
+      }
+    }
+
+    if (oportunidadeId && req.user?.empresaId) {
+      const oportunidade = await prisma.oportunidade.findFirst({
+        where: {
+          id: oportunidadeId,
+          empresaId: req.user.empresaId,
+        },
+      });
+
+      if (!oportunidade) {
+        return res
+          .status(404)
+          .json({ message: 'Oportunidade não encontrada ou não pertence à sua empresa' });
+      }
+    }
+
+    let usuarioResponsavelId = req.userId!;
+
+    if (usuarioId && req.user?.empresaId) {
+      const usuarioResponsavel = await prisma.usuario.findFirst({
+        where: {
+          id: usuarioId,
+          empresaId: req.user.empresaId,
+          isActive: true,
+        },
+      });
+
+      if (!usuarioResponsavel) {
+        return res
+          .status(400)
+          .json({ message: 'Usuário responsável não encontrado ou não pertence à sua empresa' });
+      }
+
+      usuarioResponsavelId = usuarioResponsavel.id;
     }
 
     const tarefa = await prisma.tarefa.create({
@@ -71,7 +139,7 @@ router.post('/', requireActiveTrial, async (req: AuthenticatedRequest, res: Resp
         dataVencimento: new Date(dataVencimento),
         clienteId: clienteId ?? null,
         oportunidadeId: oportunidadeId ?? null,
-        usuarioId: req.userId!,
+        usuarioId: usuarioResponsavelId,
       },
       include: {
         cliente: {
@@ -80,6 +148,7 @@ router.post('/', requireActiveTrial, async (req: AuthenticatedRequest, res: Resp
           },
         },
         oportunidade: { select: { titulo: true } },
+        usuario: { select: { nome: true } },
       },
     });
 
@@ -98,8 +167,12 @@ router.put('/:id', requireActiveTrial, async (req: AuthenticatedRequest, res: Re
     // Se o ID da sua tabela for Int, use Number(id)
     const filtroId = { id }; // ou { id: Number(id) }
 
+    const whereClause: Prisma.TarefaWhereInput = req.user?.empresaId
+      ? { ...filtroId, usuario: { empresaId: req.user.empresaId } }
+      : { ...filtroId, usuarioId: req.userId! };
+
     const tarefa = await prisma.tarefa.findFirst({
-      where: { ...filtroId, usuarioId: req.userId! },
+      where: whereClause,
     });
 
     if (!tarefa) {
@@ -151,8 +224,12 @@ router.delete('/:id', requireActiveTrial, async (req: AuthenticatedRequest, res:
     const { id } = req.params;
     const filtroId = { id }; // ou { id: Number(id) }
 
+    const whereClause: Prisma.TarefaWhereInput = req.user?.empresaId
+      ? { ...filtroId, usuario: { empresaId: req.user.empresaId } }
+      : { ...filtroId, usuarioId: req.userId! };
+
     const tarefa = await prisma.tarefa.findFirst({
-      where: { ...filtroId, usuarioId: req.userId! },
+      where: whereClause,
     });
 
     if (!tarefa) {

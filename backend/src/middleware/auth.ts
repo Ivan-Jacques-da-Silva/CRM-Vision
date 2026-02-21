@@ -4,6 +4,20 @@ import { PrismaClient } from '@prisma/client';
 
 const prisma = new PrismaClient();
 
+function getCookieValue(cookieHeader: string | undefined, name: string): string | null {
+  if (!cookieHeader) return null;
+
+  const parts = cookieHeader.split(';');
+  for (const part of parts) {
+    const [rawName, ...rawValue] = part.trim().split('=');
+    if (rawName === name) {
+      return decodeURIComponent(rawValue.join('='));
+    }
+  }
+
+  return null;
+}
+
 export interface AuthenticatedRequest extends Request {
   userId?: string;
   user?: any;
@@ -11,7 +25,9 @@ export interface AuthenticatedRequest extends Request {
 
 export const authMiddleware = async (req: AuthenticatedRequest, res: Response, next: NextFunction) => {
   try {
-    const token = req.header('Authorization')?.replace('Bearer ', '');
+    const bearerToken = req.header('Authorization')?.replace('Bearer ', '');
+    const cookieToken = getCookieValue(req.headers.cookie, 'auth_token');
+    const token = bearerToken || cookieToken;
 
     if (!token) {
       console.log('❌ Token não fornecido:', req.headers['authorization']);

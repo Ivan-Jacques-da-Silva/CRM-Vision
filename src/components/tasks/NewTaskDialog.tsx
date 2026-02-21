@@ -6,7 +6,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { criarTarefa, buscarClientes } from '@/services/api';
+import { criarTarefa, buscarClientes, buscarDadosUsuario, buscarEmpresaAtual } from '@/services/api';
 import { useToast } from '@/hooks/use-toast';
 
 interface NewTaskDialogProps {
@@ -26,24 +26,58 @@ export const NewTaskDialog: React.FC<NewTaskDialogProps> = ({
     status: 'PENDENTE' as 'PENDENTE' | 'EM_ANDAMENTO' | 'CONCLUIDA' | 'CANCELADA',
     prioridade: 'MEDIA' as 'BAIXA' | 'MEDIA' | 'ALTA' | 'URGENTE',
     dataVencimento: '',
-    clienteId: ''
+    clienteId: '',
+    usuarioId: ''
   });
   const [loading, setLoading] = useState(false);
   const [clientes, setClientes] = useState<any[]>([]);
+  const [usuariosEmpresa, setUsuariosEmpresa] = useState<any[]>([]);
+  const [usuarioAtualId, setUsuarioAtualId] = useState<string>('');
   const { toast } = useToast();
 
   useEffect(() => {
     if (open) {
       carregarClientes();
+      carregarUsuarios();
     }
   }, [open]);
 
   const carregarClientes = async () => {
     try {
       const response = await buscarClientes();
-      setClientes(response.clientes || []);
+      const lista = Array.isArray(response) ? response : response?.clientes || [];
+      setClientes(lista);
     } catch (error) {
       console.error('Erro ao carregar clientes:', error);
+    }
+  };
+
+  const carregarUsuarios = async () => {
+    try {
+      const [dadosUsuario, empresa] = await Promise.all([
+        buscarDadosUsuario(),
+        buscarEmpresaAtual()
+      ]);
+
+      const usuarios =
+        Array.isArray(empresa) ? empresa : empresa?.usuarios || [];
+
+      setUsuariosEmpresa(usuarios);
+
+      const idAtual =
+        dadosUsuario?.id ||
+        dadosUsuario?.usuario?.id ||
+        '';
+
+      if (idAtual) {
+        setUsuarioAtualId(String(idAtual));
+        setFormData((prev) => ({
+          ...prev,
+          usuarioId: prev.usuarioId || String(idAtual)
+        }));
+      }
+    } catch (error) {
+      console.error('Erro ao carregar usuários da empresa:', error);
     }
   };
 
@@ -61,14 +95,14 @@ export const NewTaskDialog: React.FC<NewTaskDialogProps> = ({
 
       onTaskCreated();
       
-      // Reset form
       setFormData({
         titulo: '',
         descricao: '',
         status: 'PENDENTE',
         prioridade: 'MEDIA',
         dataVencimento: '',
-        clienteId: ''
+        clienteId: '',
+        usuarioId: usuarioAtualId
       });
     } catch (error) {
       console.error('Erro ao criar tarefa:', error);
@@ -101,6 +135,27 @@ export const NewTaskDialog: React.FC<NewTaskDialogProps> = ({
           </div>
           
           <div>
+            <Label>Responsável</Label>
+            <Select
+              value={formData.usuarioId || usuarioAtualId}
+              onValueChange={(value) =>
+                setFormData({ ...formData, usuarioId: value })
+              }
+            >
+              <SelectTrigger>
+                <SelectValue placeholder="Selecione o responsável" />
+              </SelectTrigger>
+              <SelectContent>
+                {usuariosEmpresa.map((usuario) => (
+                  <SelectItem key={usuario.id} value={String(usuario.id)}>
+                    {usuario.nome || usuario.email || `Usuário ${usuario.id}`}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+          
+          <div>
             <Label htmlFor="prioridade">Prioridade</Label>
             <Select
               value={formData.prioridade}
@@ -121,12 +176,13 @@ export const NewTaskDialog: React.FC<NewTaskDialogProps> = ({
           </div>
           
           <div>
-            <Label htmlFor="dataVencimento">Data de Vencimento</Label>
+            <Label htmlFor="dataVencimento">Data e horário</Label>
             <Input
               id="dataVencimento"
-              type="date"
+              type="datetime-local"
               value={formData.dataVencimento}
               onChange={(e) => setFormData({ ...formData, dataVencimento: e.target.value })}
+              required
             />
           </div>
           

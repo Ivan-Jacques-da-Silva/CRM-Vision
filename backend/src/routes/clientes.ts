@@ -10,20 +10,32 @@ const prisma = new PrismaClient();
 router.use(authMiddleware);
 router.use(checkTrialStatus);
 
-// GET /api/clientes - Listar clientes (filtrado por empresa)
+// GET /api/clientes - Listar clientes (visíveis para todos usuários da mesma empresa)
 router.get('/', async (req: AuthenticatedRequest, res) => {
   try {
-    const whereClause: any = {
-      usuarioId: req.userId!
-    };
+    const { q } = req.query as { q?: string };
 
-    // Se usuário tem empresa, filtrar apenas clientes da mesma empresa
-    if (req.user?.empresaId) {
-      whereClause.empresaId = req.user.empresaId;
-    }
+    const baseWhere: any = req.user?.empresaId
+      ? { empresaId: req.user.empresaId }
+      : { usuarioId: req.userId! };
+
+    const searchWhere =
+      q && q.trim()
+        ? {
+            OR: [
+              { nome: { contains: q, mode: 'insensitive' } },
+              { email: { contains: q, mode: 'insensitive' } },
+              { telefone: { contains: q, mode: 'insensitive' } },
+              { nomeEmpresa: { contains: q, mode: 'insensitive' } }
+            ]
+          }
+        : {};
 
     const clientes = await prisma.cliente.findMany({
-      where: whereClause,
+      where: {
+        ...baseWhere,
+        ...searchWhere
+      },
       include: {
         usuario: { select: { nome: true } },
         empresa: { select: { nome: true } },
@@ -66,12 +78,12 @@ router.get('/:id', async (req: AuthenticatedRequest, res) => {
   try {
     const { id } = req.params;
 
+    const whereClause: any = req.user?.empresaId
+      ? { id, empresaId: req.user.empresaId }
+      : { id, usuarioId: req.userId! };
+
     const cliente = await prisma.cliente.findFirst({
-      where: {
-        id,
-        usuarioId: req.userId!,
-        empresaId: req.user?.empresaId // Adiciona filtro de empresa
-      }
+      where: whereClause
     });
 
     if (!cliente) {
@@ -91,12 +103,12 @@ router.put('/:id', requireActiveTrial, async (req: AuthenticatedRequest, res) =>
     const { id } = req.params;
     const updates = req.body;
 
+    const whereClause: any = req.user?.empresaId
+      ? { id, empresaId: req.user.empresaId }
+      : { id, usuarioId: req.userId! };
+
     const cliente = await prisma.cliente.findFirst({
-      where: {
-        id,
-        usuarioId: req.userId!,
-        empresaId: req.user?.empresaId // Adiciona filtro de empresa
-      }
+      where: whereClause
     });
 
     if (!cliente) {
@@ -133,12 +145,12 @@ router.delete('/:id', requireActiveTrial, async (req: AuthenticatedRequest, res)
   try {
     const { id } = req.params;
 
+    const whereClause: any = req.user?.empresaId
+      ? { id, empresaId: req.user.empresaId }
+      : { id, usuarioId: req.userId! };
+
     const cliente = await prisma.cliente.findFirst({
-      where: {
-        id,
-        usuarioId: req.userId!,
-        empresaId: req.user?.empresaId // Adiciona filtro de empresa
-      }
+      where: whereClause
     });
 
     if (!cliente) {

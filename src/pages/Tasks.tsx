@@ -18,6 +18,13 @@ interface Tarefa {
   clienteId?: string;
   oportunidadeId?: string;
   usuarioResponsavel?: string;
+  cliente?: {
+    nome: string;
+    nomeEmpresa?: string;
+  };
+  usuario?: {
+    nome: string;
+  };
   createdAt: string;
   updatedAt: string;
 }
@@ -37,7 +44,8 @@ const Tasks = () => {
     try {
       setLoading(true);
       const response = await buscarTarefas();
-      setTarefas(response.tarefas || []);
+      const lista = Array.isArray(response) ? response : response?.tarefas || [];
+      setTarefas(lista);
     } catch (error) {
       console.error('Erro ao carregar tarefas:', error);
       toast({
@@ -169,7 +177,15 @@ const Tasks = () => {
           <Card key={tarefa.id} className="glass-card">
             <CardHeader className="pb-2">
               <div className="flex items-center justify-between">
-                <CardTitle className="text-base">{tarefa.titulo}</CardTitle>
+                <div>
+                  <CardTitle className="text-base">{tarefa.titulo}</CardTitle>
+                  {tarefa.cliente && (
+                    <p className="text-xs text-muted-foreground">
+                      {tarefa.cliente.nome}
+                      {tarefa.cliente.nomeEmpresa ? ` • ${tarefa.cliente.nomeEmpresa}` : ''}
+                    </p>
+                  )}
+                </div>
                 <div className="flex items-center gap-2">
                   {getStatusIcon(tarefa.status)}
                   <Badge className={`${getPrioridadeColor(tarefa.prioridade)} text-white`}>
@@ -189,14 +205,19 @@ const Tasks = () => {
                 {tarefa.dataVencimento && (
                   <div className="flex items-center gap-2 text-sm">
                     <Calendar className="w-4 h-4" />
-                    <span>{new Date(tarefa.dataVencimento).toLocaleDateString('pt-BR')}</span>
+                    <span>
+                      {new Date(tarefa.dataVencimento).toLocaleString('pt-BR', {
+                        dateStyle: 'short',
+                        timeStyle: 'short',
+                      })}
+                    </span>
                   </div>
                 )}
                 
-                {tarefa.usuarioResponsavel && (
+                {(tarefa.usuarioResponsavel || tarefa.usuario?.nome) && (
                   <div className="flex items-center gap-2 text-sm">
                     <User className="w-4 h-4" />
-                    <span>{tarefa.usuarioResponsavel}</span>
+                    <span>{tarefa.usuarioResponsavel || tarefa.usuario?.nome}</span>
                   </div>
                 )}
               </div>

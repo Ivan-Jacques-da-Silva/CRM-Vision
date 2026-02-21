@@ -3,7 +3,7 @@
  * Componente da barra lateral de navegação
  * Fornece navegação principal do aplicativo VisionCRM com suporte para exibição em dispositivos móveis
  */
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { NavLink } from 'react-router-dom';
 import {
   LayoutDashboard,
@@ -20,17 +20,48 @@ import {
   LogOut
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { buscarDadosUsuario } from '@/services/api';
 
 interface SidebarProps {
   isOpen: boolean;
   onItemClick?: () => void;
 }
 
-/**
- * Renderiza a barra lateral com opções de navegação
- * @param isOpen - Indica se a barra lateral está expandida ou recolhida
- */
 export const Sidebar: React.FC<SidebarProps> = ({ isOpen, onItemClick }) => {
+  const [userName, setUserName] = useState<string>('Usuário');
+
+  useEffect(() => {
+    let isMounted = true;
+
+    const carregarUsuario = async () => {
+      try {
+        const response = await buscarDadosUsuario();
+        const nome =
+          response?.usuario?.nome ||
+          response?.nome ||
+          response?.user?.nome ||
+          'Usuário';
+
+        if (isMounted && typeof nome === 'string' && nome.trim().length > 0) {
+          setUserName(nome);
+        }
+      } catch (error) {
+        console.error('Erro ao carregar dados do usuário:', error);
+      }
+    };
+
+    carregarUsuario();
+
+    return () => {
+      isMounted = false;
+    };
+  }, []);
+
+  const inicial =
+    userName && userName.trim().length > 0
+      ? userName.trim().charAt(0).toUpperCase()
+      : 'U';
+
   const itensMenu = [
     { nome: 'Dashboard', caminho: '/dashboard', Icone: LayoutDashboard },
     { nome: 'Clientes', caminho: '/clients', Icone: Users },
@@ -48,7 +79,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen, onItemClick }) => {
   return (
     <aside
       className={cn(
-        'fixed left-0 top-16 h-[calc(100vh-64px)] z-40 transition-all duration-500 transform glass-card border-r border-white/20 dark:border-gray-700/20',
+        'fixed left-0 top-16 h-[calc(100vh-64px)] z-40 transition-all duration-500 transform sidebar-surface',
         isOpen ? 'w-64' : 'w-16 md:w-16 -translate-x-full md:translate-x-0'
       )}
     >
@@ -64,10 +95,10 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen, onItemClick }) => {
                 to={item.caminho}
                 onClick={onItemClick}
                 className={({ isActive }) => cn(
-                  'flex items-center px-3 py-3 rounded-lg transition-colors duration-300 group relative overflow-hidden',
+                  'sidebar-nav-item flex items-center px-3 py-3 rounded-lg transition-all duration-200 group relative overflow-hidden',
                   isActive 
-                    ? 'bg-primary/20 text-primary backdrop-blur-sm' 
-                    : 'text-sidebar-foreground hover:bg-accent/50',
+                    ? 'sidebar-nav-item-active'
+                    : '',
                   !isOpen && 'justify-center md:justify-center'
                 )}
               >
@@ -85,21 +116,20 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen, onItemClick }) => {
           ))}
         </ul>
         
-        <div className="mt-auto border-t border-white/20 dark:border-gray-700/20 pt-4 flex flex-col gap-2">
-          <div className="flex items-center px-3 py-3 text-sm text-sidebar-foreground glass-card rounded-lg">
+        <div className="mt-auto border-t border-[hsl(var(--sidebar-border)/0.7)] pt-4 flex flex-col gap-2">
+          <div className="flex items-center px-3 py-3 text-sm text-sidebar-foreground rounded-lg bg-[hsl(var(--sidebar-accent)/0.35)] border border-[hsl(var(--sidebar-border)/0.7)]">
             {isOpen ? (
               <>
                 <div className="w-10 h-10 bg-gradient-to-br from-primary to-accent rounded-full flex items-center justify-center text-white font-bold text-lg">
-                  A
+                  {inicial}
                 </div>
                 <div className="ml-3">
-                  <p className="font-semibold">Admin User</p>
-                  <p className="text-xs opacity-70">Administrador</p>
+                  <p className="font-semibold truncate">{userName}</p>
                 </div>
               </>
             ) : (
               <div className="w-10 h-10 bg-gradient-to-br from-primary to-accent rounded-full flex items-center justify-center text-white mx-auto font-bold text-lg">
-                A
+                {inicial}
               </div>
             )}
           </div>
@@ -109,7 +139,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen, onItemClick }) => {
             to="/"
             onClick={onItemClick}
             className={cn(
-              'flex items-center px-3 py-3 rounded-lg transition-colors duration-300 text-destructive hover:bg-destructive/10 glass-card',
+              'flex items-center px-3 py-3 rounded-lg transition-colors duration-300 text-destructive hover:bg-destructive/12 bg-[hsl(var(--sidebar-accent)/0.35)] border border-[hsl(var(--sidebar-border)/0.7)]',
               !isOpen && 'justify-center'
             )}
           >

@@ -842,6 +842,21 @@ export function Clients() {
               </div>
             </div>
             <div className="space-y-2">
+              <Label htmlFor="endereco">Endereço</Label>
+              <Input
+                id="endereco"
+                placeholder="Rua, número, bairro, cidade/UF"
+                value={newClientData.endereco}
+                onChange={(e) =>
+                  setNewClientData((prev) => ({
+                    ...prev,
+                    endereco: e.target.value,
+                  }))
+                }
+                data-testid="input-create-address"
+              />
+            </div>
+            <div className="space-y-2">
               <Label htmlFor="observacoes">Observações</Label>
               <Textarea
                 id="observacoes"
@@ -1033,6 +1048,20 @@ export function Clients() {
                     </SelectContent>
                   </Select>
                 </div>
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="edit-endereco">Endereço</Label>
+                <Input
+                  id="edit-endereco"
+                  placeholder="Rua, número, bairro, cidade/UF"
+                  value={selectedClient.endereco || ""}
+                  onChange={(e) =>
+                    setSelectedClient((prev) =>
+                      prev ? { ...prev, endereco: e.target.value } : null,
+                    )
+                  }
+                  data-testid="input-edit-address"
+                />
               </div>
               <div className="space-y-2">
                 <Label htmlFor="edit-observacoes">Observações</Label>

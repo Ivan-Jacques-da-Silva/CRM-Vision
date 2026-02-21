@@ -1,5 +1,5 @@
 
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -7,9 +7,20 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { CheckCircle, Users, CreditCard, CalendarClock } from "lucide-react";
+import { useToast } from "@/hooks/use-toast";
+import { buscarEmpresaAtual, criarUsuarioEmpresa } from "@/services/api";
 
 export function Subscription() {
+  const { toast } = useToast();
   const [userCount, setUserCount] = useState(1);
+  const [maxUsers, setMaxUsers] = useState(2);
+  const [loadingUsers, setLoadingUsers] = useState(true);
+  const [creatingUser, setCreatingUser] = useState(false);
+  const [newUser, setNewUser] = useState({
+    nome: "",
+    email: "",
+    senha: ""
+  });
   const basePrice = 287;
   const additionalUserPrice = 64.90;
   const totalPrice = basePrice + (additionalUserPrice * (userCount - 1));
@@ -22,6 +33,56 @@ export function Subscription() {
       style: 'currency',
       currency: 'BRL',
     }).format(value);
+  };
+
+  useEffect(() => {
+    const carregarEmpresa = async () => {
+      try {
+        const response = await buscarEmpresaAtual();
+        setUserCount(response.stats?.totalUsuarios || response.usuarios?.length || 1);
+        setMaxUsers(response.stats?.maxUsuarios || 2);
+      } catch (error) {
+        console.error("Erro ao carregar dados da empresa:", error);
+      } finally {
+        setLoadingUsers(false);
+      }
+    };
+
+    carregarEmpresa();
+  }, []);
+
+  const handleCreateUser = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!newUser.nome || !newUser.email || !newUser.senha) {
+      toast({
+        title: "Dados incompletos",
+        description: "Preencha nome, email e senha do novo usuário.",
+        variant: "destructive"
+      });
+      return;
+    }
+    try {
+      setCreatingUser(true);
+      await criarUsuarioEmpresa(newUser);
+      setNewUser({ nome: "", email: "", senha: "" });
+      toast({
+        title: "Usuário criado",
+        description: "Novo usuário adicionado à empresa."
+      });
+      const response = await buscarEmpresaAtual();
+      setUserCount(response.stats?.totalUsuarios || response.usuarios?.length || 1);
+      setMaxUsers(response.stats?.maxUsuarios || 2);
+    } catch (error: any) {
+      console.error("Erro ao criar usuário:", error);
+      const message = error?.message || "Não foi possível criar o usuário.";
+      toast({
+        title: "Erro ao criar usuário",
+        description: message,
+        variant: "destructive"
+      });
+    } finally {
+      setCreatingUser(false);
+    }
   };
 
   return (
@@ -174,44 +235,59 @@ export function Subscription() {
             <CardHeader>
               <CardTitle className="flex justify-between items-center">
                 <span>Gerenciar Usuários</span>
-                <Badge variant="outline">{userCount} usuário{userCount > 1 ? 's' : ''}</Badge>
+                <Badge variant="outline">
+                  {loadingUsers ? "Carregando..." : `${userCount}/${maxUsers} usuário${userCount > 1 ? 's' : ''}`}
+                </Badge>
               </CardTitle>
               <CardDescription>
-                Adicione ou remova usuários da sua assinatura
+                Adicione usuários à sua empresa. Até 2 usuários estão incluídos no plano gratuito.
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-6">
               <div className="space-y-2">
-                <Label>Quantidade de usuários</Label>
-                <div className="flex items-center">
-                  <Button 
-                    variant="outline" 
-                    size="icon"
-                    onClick={() => setUserCount(Math.max(1, userCount - 1))}
-                    disabled={userCount <= 1}
-                  >
-                    -
-                  </Button>
-                  <Input 
-                    className="w-20 mx-2 text-center" 
-                    value={userCount} 
-                    onChange={(e) => {
-                      const value = parseInt(e.target.value);
-                      if (!isNaN(value) && value >= 1) {
-                        setUserCount(value);
-                      }
-                    }}
-                    min="1"
-                    type="number"
-                  />
-                  <Button 
-                    variant="outline" 
-                    size="icon"
-                    onClick={() => setUserCount(userCount + 1)}
-                  >
-                    +
-                  </Button>
-                </div>
+                <Label>Novo usuário da empresa</Label>
+                <form onSubmit={handleCreateUser} className="grid grid-cols-1 md:grid-cols-3 gap-3 items-end">
+                  <div>
+                    <Label>Nome</Label>
+                    <Input
+                      value={newUser.nome}
+                      onChange={(e) => setNewUser((prev) => ({ ...prev, nome: e.target.value }))}
+                      placeholder="Nome do usuário"
+                    />
+                  </div>
+                  <div>
+                    <Label>Email</Label>
+                    <Input
+                      type="email"
+                      value={newUser.email}
+                      onChange={(e) => setNewUser((prev) => ({ ...prev, email: e.target.value }))}
+                      placeholder="email@empresa.com"
+                    />
+                  </div>
+                  <div className="flex gap-2">
+                    <div className="flex-1">
+                      <Label>Senha</Label>
+                      <Input
+                        type="password"
+                        value={newUser.senha}
+                        onChange={(e) => setNewUser((prev) => ({ ...prev, senha: e.target.value }))}
+                        placeholder="Senha temporária"
+                      />
+                    </div>
+                    <Button
+                      type="submit"
+                      className="mt-6"
+                      disabled={creatingUser || loadingUsers || userCount >= maxUsers}
+                    >
+                      {creatingUser ? "Criando..." : "Adicionar"}
+                    </Button>
+                  </div>
+                </form>
+                {userCount >= maxUsers && (
+                  <p className="text-sm text-muted-foreground">
+                    Limite de 2 usuários atingido no plano atual. Para liberar mais, será necessário contratar mais usuários.
+                  </p>
+                )}
               </div>
               
               <div className="bg-muted p-4 rounded-md">
@@ -231,32 +307,14 @@ export function Subscription() {
               
               <div className="space-y-3">
                 <div className="flex items-center justify-between border-b pb-2">
-                  <div className="flex items-center">
-                    <div className="w-8 h-8 rounded-full bg-primary flex items-center justify-center text-white">
-                      A
-                    </div>
-                    <div className="ml-3">
-                      <p className="font-medium">Admin User</p>
-                      <p className="text-xs text-muted-foreground">admin@company.com</p>
-                    </div>
+                  <div>
+                    <p className="font-medium">Limite de usuários da empresa</p>
+                    <p className="text-xs text-muted-foreground">
+                      O plano atual permite até 2 usuários ativos por empresa.
+                    </p>
                   </div>
-                  <Badge>Admin</Badge>
+                  <Badge variant="outline">{maxUsers} usuários</Badge>
                 </div>
-                
-                {userCount > 1 && Array.from({ length: userCount - 1 }).map((_, i) => (
-                  <div key={i} className="flex items-center justify-between border-b pb-2">
-                    <div className="flex items-center">
-                      <div className="w-8 h-8 rounded-full bg-muted flex items-center justify-center">
-                        {String.fromCharCode(66 + i)}
-                      </div>
-                      <div className="ml-3">
-                        <p className="font-medium">Usuário {i + 2}</p>
-                        <p className="text-xs text-muted-foreground">user{i + 2}@company.com</p>
-                      </div>
-                    </div>
-                    <Badge variant="outline">Vendedor</Badge>
-                  </div>
-                ))}
               </div>
             </CardContent>
             <CardFooter className="flex justify-between border-t pt-4">
