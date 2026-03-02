@@ -56,8 +56,8 @@ router.post('/register', async (req, res) => {
   try {
     const { nome, email, senha, empresaNome } = req.body;
 
-    if (!nome || !email || !senha || !empresaNome) {
-      return res.status(400).json({ message: 'Nome, email, senha e nome da empresa sao obrigatorios' });
+    if (!nome || !email || !senha) {
+      return res.status(400).json({ message: 'Nome, email e senha sao obrigatorios' });
     }
 
     const existingUser = await prisma.usuario.findUnique({
@@ -70,9 +70,12 @@ router.post('/register', async (req, res) => {
 
     const hashedPassword = await bcrypt.hash(senha, 10);
 
+    const nomeEmpresaFinal =
+      (empresaNome && String(empresaNome).trim()) || String(nome).trim();
+
     const empresa = await prisma.empresa.create({
       data: {
-        nome: empresaNome
+        nome: nomeEmpresaFinal
       }
     });
 
@@ -180,6 +183,8 @@ router.get('/me', authMiddleware, async (req: AuthenticatedRequest, res) => {
         id: true,
         nome: true,
         email: true,
+        telefone: true,
+        avatar: true,
         empresaId: true,
         kanbanPipelineAtivo: true,
         plano: true,
@@ -203,6 +208,8 @@ router.get('/me', authMiddleware, async (req: AuthenticatedRequest, res) => {
         id: usuario.id,
         nome: usuario.nome,
         email: usuario.email,
+        telefone: usuario.telefone,
+        avatar: usuario.avatar,
         empresaId: usuario.empresaId,
         kanbanPipelineAtivo: usuario.kanbanPipelineAtivo,
         plano: isTrialExpired ? 'EXPIRADO' : usuario.plano,

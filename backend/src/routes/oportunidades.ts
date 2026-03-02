@@ -1,5 +1,6 @@
 import express from 'express';
 import { PrismaClient } from '@prisma/client';
+import bcrypt from 'bcryptjs';
 import { authMiddleware, AuthenticatedRequest } from '../middleware/auth';
 import { checkTrialStatus, requireActiveTrial } from '../middleware/trial';
 
@@ -161,7 +162,13 @@ router.get('/pipelines', requireActiveTrial, async (req: AuthenticatedRequest, r
 
     // Buscar pipelines já configurados
     let pipelines = await prisma.pipelineKanban.findMany({
-      where: { empresaId },
+      where: { 
+        empresaId,
+        OR: [
+          { privado: false },
+          { privado: true, usuarioId: req.userId }
+        ]
+      },
       orderBy: { createdAt: 'asc' },
     });
 
@@ -172,12 +179,19 @@ router.get('/pipelines', requireActiveTrial, async (req: AuthenticatedRequest, r
           empresaId,
           slug: 'principal',
           nome: 'Pipeline Principal',
+          privado: false,
         },
       });
       pipelines = [principal];
     }
 
-    res.json(pipelines);
+    const pipelinesSafe = pipelines.map(p => ({
+      ...p,
+      senha: !!p.senha, // Retorna boolean se tem senha
+      temSenha: !!p.senha // Alias para clareza
+    }));
+
+    res.json(pipelinesSafe);
   } catch (error) {
     console.error('Erro ao buscar pipelines do Kanban:', error);
     res.status(500).json({ message: 'Erro interno do servidor' });
@@ -191,7 +205,7 @@ router.post('/pipelines', requireActiveTrial, async (req: AuthenticatedRequest, 
       return res.status(400).json({ message: 'Usuário não possui empresa vinculada' });
     }
 
-    const { nome } = req.body;
+    const { nome, senha, privado } = req.body;
 
     if (!nome || typeof nome !== 'string') {
       return res.status(400).json({ message: 'Nome do pipeline é obrigatório' });
@@ -213,17 +227,62 @@ router.post('/pipelines', requireActiveTrial, async (req: AuthenticatedRequest, 
       return res.status(400).json({ message: 'Já existe um pipeline com este identificador' });
     }
 
+    let senhaHash = null;
+    if (senha && typeof senha === 'string' && senha.trim()) {
+      senhaHash = await bcrypt.hash(senha, 10);
+    }
+
     const pipeline = await prisma.pipelineKanban.create({
       data: {
         empresaId,
         slug,
         nome: nome.trim(),
+        senha: senhaHash,
+        privado: !!privado,
+        usuarioId: req.userId,
       },
     });
 
-    res.status(201).json(pipeline);
+    res.status(201).json({
+      ...pipeline,
+      senha: !!pipeline.senha,
+      temSenha: !!pipeline.senha,
+    });
   } catch (error) {
     console.error('Erro ao criar pipeline do Kanban:', error);
+    res.status(500).json({ message: 'Erro interno do servidor' });
+  }
+});
+
+// Verificar senha do pipeline
+router.post('/pipelines/:slug/verificar-senha', requireActiveTrial, async (req: AuthenticatedRequest, res) => {
+  try {
+    const { slug } = req.params;
+    const { senha } = req.body;
+    const empresaId = req.user?.empresaId;
+
+    if (!empresaId) return res.status(400).json({ message: 'Empresa não encontrada' });
+
+    const pipeline = await prisma.pipelineKanban.findUnique({
+      where: {
+        empresaId_slug: {
+          empresaId,
+          slug,
+        },
+      },
+    });
+
+    if (!pipeline) return res.status(404).json({ message: 'Pipeline não encontrado' });
+
+    if (!pipeline.senha) return res.json({ valido: true }); // Sem senha = acesso livre
+
+    if (!senha) return res.json({ valido: false });
+
+    const valido = await bcrypt.compare(senha, pipeline.senha);
+    return res.json({ valido });
+
+  } catch (error) {
+    console.error('Erro ao verificar senha do pipeline:', error);
     res.status(500).json({ message: 'Erro interno do servidor' });
   }
 });

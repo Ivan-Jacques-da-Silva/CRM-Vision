@@ -1,13 +1,43 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 import logo from '@/assets/VisionCRM_Logo.png';
+import { buscarDadosUsuario } from '@/services/api';
 
 export const Navbar: React.FC = () => {
   const location = useLocation();
+  const [isLoggedIn, setIsLoggedIn] = useState(false);
 
   const isActive = (path: string) => location.pathname === path;
+
+  useEffect(() => {
+    let isMounted = true;
+
+    const verificarLogin = async () => {
+      try {
+        const response = await buscarDadosUsuario();
+        const hasUser =
+          !!response?.usuario?.id ||
+          !!response?.id ||
+          !!response?.user?.id;
+
+        if (isMounted) {
+          setIsLoggedIn(!!hasUser);
+        }
+      } catch {
+        if (isMounted) {
+          setIsLoggedIn(false);
+        }
+      }
+    };
+
+    verificarLogin();
+
+    return () => {
+      isMounted = false;
+    };
+  }, []);
 
   return (
     <nav className="glass-card border-b border-white/20 dark:border-gray-700/20 sparkle-effect">
@@ -29,7 +59,7 @@ export const Navbar: React.FC = () => {
                 isActive('/') ? 'text-primary glow-effect' : 'text-muted-foreground hover:text-primary'
               )}
             >
-              Inicio
+              Início
               <span className="absolute -bottom-1 left-0 w-0 h-0.5 bg-primary transition-all duration-300 group-hover:w-full"></span>
             </Link>
             <Link
@@ -45,11 +75,15 @@ export const Navbar: React.FC = () => {
           </div>
 
           <div className="flex items-center space-x-2">
-            <Button variant="ghost" asChild size="sm" className="glass-button hover-fix interactive-element">
-              <Link to="/login">Login</Link>
-            </Button>
-            <Button asChild size="sm" className="shine-effect interactive-element morphing-border glass-button">
-              <Link to="/register">Registrar</Link>
+            <Button
+              asChild
+              size="sm"
+              className="shine-effect interactive-element morphing-border glass-button"
+              variant={isLoggedIn ? "outline" : "default"}
+            >
+              <Link to={isLoggedIn ? "/dashboard" : "/login"}>
+                {isLoggedIn ? 'Logado' : 'Login'}
+              </Link>
             </Button>
           </div>
         </div>

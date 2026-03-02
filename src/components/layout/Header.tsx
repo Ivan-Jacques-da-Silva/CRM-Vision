@@ -232,6 +232,13 @@ const Header: React.FC<HeaderProps> = ({ toggleSidebar }) => {
           <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground z-10" />
           <Input
             type="search"
+            name="global-search"
+            autoComplete="off"
+            autoCorrect="off"
+            autoCapitalize="none"
+            spellCheck={false}
+            data-1p-ignore="true"
+            data-lpignore="true"
             placeholder="Buscar clientes, tarefas, oportunidades..."
             className="pl-9 glass-card border-white/30 dark:border-gray-600/30 focus:ring-2 focus:ring-primary/50 hover-fix interactive-element"
             value={searchValue}

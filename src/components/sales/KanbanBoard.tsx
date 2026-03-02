@@ -42,6 +42,7 @@ import {
   salvarConfigKanban,
   PipelineKanban,
   criarTarefa,
+  verificarSenhaPipeline,
 } from "@/services/api";
 import { useToast } from "@/hooks/use-toast";
 import { createPortal } from "react-dom";
@@ -118,7 +119,7 @@ const etapasComerciais = [
   { id: "PERDIDO", nome: "Perdido", icone: XCircle, cor: "bg-red-500" },
 ] as const;
 
-export const KanbanBoard: React.FC = () => {
+export const KanbanBoard: React.FC<{ hideValues?: boolean }> = ({ hideValues = false }) => {
   const [todasOportunidades, setTodasOportunidades] = useState<Oportunidade[]>([]);
   const [oportunidades, setOportunidades] = useState<Record<string, Oportunidade[]>>({});
   const [dialogAberto, setDialogAberto] = useState(false);
@@ -127,15 +128,28 @@ export const KanbanBoard: React.FC = () => {
   const [etapasPersonalizadas, setEtapasPersonalizadas] = useState<
     Record<string, { id: string; nome: string; cor: string; icone?: string }[]>
   >({});
-  const [pipelines, setPipelines] = useState<{ id: string; nome: string; ativo: boolean }[]>([
-    { id: "principal", nome: "Pipeline Principal", ativo: true },
-  ]);
+  const [pipelines, setPipelines] = useState<{
+    id: string;
+    nome: string;
+    ativo: boolean;
+    temSenha?: boolean;
+    privado?: boolean;
+    usuarioId?: string;
+  }[]>([{ id: "principal", nome: "Pipeline Principal", ativo: true }]);
   const [pipelineAtivo, setPipelineAtivo] = useState("principal");
   const { toast } = useToast();
   const [modalExcluirAberto, setModalExcluirAberto] = useState(false);
   const [oportunidadeParaExcluir, setOportunidadeParaExcluir] = useState<string | null>(null);
   const [modalNovoPipelineAberto, setModalNovoPipelineAberto] = useState(false);
   const [nomeNovoPipeline, setNomeNovoPipeline] = useState("");
+  const [novoPipelinePrivado, setNovoPipelinePrivado] = useState(false);
+  const [novoPipelineComSenha, setNovoPipelineComSenha] = useState(false);
+  const [novoPipelineSenha, setNovoPipelineSenha] = useState("");
+  const [modalSenhaAberto, setModalSenhaAberto] = useState(false);
+  const [senhaVerificacao, setSenhaVerificacao] = useState("");
+  const [pipelineAlvoVerificacao, setPipelineAlvoVerificacao] = useState("");
+  const [pipelinesVerificados, setPipelinesVerificados] = useState<Set<string>>(new Set());
+  const [verificandoSenha, setVerificandoSenha] = useState(false);
   const [modalNovaColunaAberto, setModalNovaColunaAberto] = useState(false);
   const [nomeNovaColuna, setNomeNovaColuna] = useState("");
   const [iconeNovaColuna, setIconeNovaColuna] = useState("user");
@@ -201,6 +215,9 @@ export const KanbanBoard: React.FC = () => {
         id: p.slug,
         nome: p.nome,
         ativo: false,
+        temSenha: p.temSenha,
+        privado: p.privado,
+        usuarioId: p.usuarioId,
       }));
 
       const pipelinePreferido =
@@ -213,10 +230,15 @@ export const KanbanBoard: React.FC = () => {
 
       let ativo = pipelinePreferido || pipelineAtivo;
 
+      // Se o pipeline preferido não existe, volta para o primeiro
       if (!pipelinesMapeados.some((p) => p.id === ativo)) {
-        ativo = pipelinesMapeados[0].id;
+        ativo = pipelinesMapeados[0]?.id || "principal";
       }
 
+      // Se o pipeline ativo atual tem senha e não está verificado, e estamos tentando carregar ele...
+      // Precisamos verificar se ele foi verificado na sessão.
+      // Como é carregamento inicial ou atualização, podemos manter se já estiver verificado ou se for o atual.
+      
       if (ativo !== pipelineAtivo) {
         setPipelineAtivo(ativo);
       }
@@ -257,16 +279,37 @@ export const KanbanBoard: React.FC = () => {
   const criarNovoPipeline = async () => {
     const nome = nomeNovoPipeline.trim();
     if (!nome) {
-      setModalNovoPipelineAberto(false);
-      setNomeNovoPipeline("");
+      toast({
+        title: "Nome obrigatório",
+        description: "Por favor, informe o nome do pipeline.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    if (novoPipelineComSenha && !novoPipelineSenha.trim()) {
+      toast({
+        title: "Senha obrigatória",
+        description: "Você marcou para proteger com senha, mas não informou a senha.",
+        variant: "destructive",
+      });
       return;
     }
 
     try {
       setSalvandoPipeline(true);
-      const pipelineCriado = await criarPipelineKanban({ nome });
-      await carregarConfigKanban();
+      const pipelineCriado = await criarPipelineKanban({
+        nome,
+        senha: novoPipelineComSenha ? novoPipelineSenha : undefined,
+        privado: novoPipelinePrivado,
+      });
+
       if (pipelineCriado?.slug) {
+        // Se criou com senha, já adiciona aos verificados pois o criador tem acesso
+        if (novoPipelineComSenha) {
+          setPipelinesVerificados((prev) => new Set(prev).add(pipelineCriado.slug));
+        }
+        await carregarConfigKanban();
         setPipelineAtivo(pipelineCriado.slug);
         await salvarPipelineAtivoKanban(pipelineCriado.slug);
       }
@@ -278,17 +321,54 @@ export const KanbanBoard: React.FC = () => {
 
       setModalNovoPipelineAberto(false);
       setNomeNovoPipeline("");
+      setNovoPipelinePrivado(false);
+      setNovoPipelineComSenha(false);
+      setNovoPipelineSenha("");
     } catch (error) {
       console.error("Erro ao criar pipeline:", error);
       toast({
         title: "Erro",
-        description: "Nao foi possivel salvar o novo pipeline.",
+        description: "Não foi possível salvar o novo pipeline.",
         variant: "destructive",
       });
     } finally {
       setSalvandoPipeline(false);
     }
   };
+
+  const verificarSenha = async () => {
+    if (!senhaVerificacao) return;
+    
+    try {
+      setVerificandoSenha(true);
+      const res = await verificarSenhaPipeline(pipelineAlvoVerificacao, senhaVerificacao);
+      
+      if (res && res.valido) {
+        setPipelinesVerificados((prev) => new Set(prev).add(pipelineAlvoVerificacao));
+        setPipelineAtivo(pipelineAlvoVerificacao);
+        await salvarPipelineAtivoKanban(pipelineAlvoVerificacao);
+        setModalSenhaAberto(false);
+        setSenhaVerificacao("");
+        setPipelineAlvoVerificacao("");
+      } else {
+        toast({
+          title: "Senha incorreta",
+          description: "A senha informada não é válida para este pipeline.",
+          variant: "destructive",
+        });
+      }
+    } catch (error) {
+      console.error("Erro ao verificar senha:", error);
+      toast({
+        title: "Erro",
+        description: "Ocorreu um erro ao verificar a senha.",
+        variant: "destructive",
+      });
+    } finally {
+      setVerificandoSenha(false);
+    }
+  };
+
 
   const obterEtapasParaPipeline = (pipelineId: string) => {
     const custom = etapasPersonalizadas[pipelineId] || [];
@@ -767,6 +847,14 @@ export const KanbanBoard: React.FC = () => {
             value={pipelineAtivo}
             onChange={(e) => {
               const novoPipeline = e.target.value;
+              const pipelineObj = pipelines.find((p) => p.id === novoPipeline);
+
+              if (pipelineObj?.temSenha && !pipelinesVerificados.has(novoPipeline)) {
+                setPipelineAlvoVerificacao(novoPipeline);
+                setModalSenhaAberto(true);
+                return;
+              }
+
               setPipelineAtivo(novoPipeline);
               salvarPipelineAtivoKanban(novoPipeline).catch((error) => {
                 console.error("Erro ao salvar pipeline ativo do usuario:", error);
@@ -777,7 +865,7 @@ export const KanbanBoard: React.FC = () => {
           >
             {pipelines.map((pipeline) => (
               <option key={pipeline.id} value={pipeline.id}>
-                {pipeline.nome}
+                {pipeline.nome} {pipeline.privado ? "(Privado)" : ""} {pipeline.temSenha ? "(Senha)" : ""}
               </option>
             ))}
           </select>
@@ -852,7 +940,9 @@ export const KanbanBoard: React.FC = () => {
                             <div className="min-w-0 flex-1">
                               <h3 className="font-medium text-foreground text-sm truncate">{etapa.nome}</h3>
                               <p className="text-xs text-muted-foreground truncate">
-                                {totalColuna.toLocaleString("pt-BR", { style: "currency", currency: "BRL" })}
+                                {hideValues 
+                                  ? "R$ ******" 
+                                  : totalColuna.toLocaleString("pt-BR", { style: "currency", currency: "BRL" })}
                               </p>
                             </div>
                           </div>
@@ -965,7 +1055,9 @@ export const KanbanBoard: React.FC = () => {
                                         <div className="flex items-center gap-2 text-xs">
                                           <DollarSign className="w-3 h-3 text-emerald-500 flex-shrink-0" />
                                           <span className="font-medium text-emerald-600 truncate">
-                                            {oportunidade.valor
+                                            {hideValues
+                                              ? "R$ ******"
+                                              : oportunidade.valor
                                               ? oportunidade.valor.toLocaleString("pt-BR", {
                                                   style: "currency",
                                                   currency: "BRL",
@@ -1057,13 +1149,22 @@ export const KanbanBoard: React.FC = () => {
 
             <div>
               <Label htmlFor="editar-valor">Valor (R$)</Label>
-              <Input
-                id="editar-valor"
-                type="number"
-                step="0.01"
-                value={formEdicao.valor}
-                onChange={(e) => setFormEdicao({ ...formEdicao, valor: e.target.value })}
-              />
+              {hideValues ? (
+                <div className="relative">
+                  <Input value="******" disabled />
+                  <p className="text-[10px] text-muted-foreground mt-1">
+                    Desative o modo de privacidade para editar o valor.
+                  </p>
+                </div>
+              ) : (
+                <Input
+                  id="editar-valor"
+                  type="number"
+                  step="0.01"
+                  value={formEdicao.valor}
+                  onChange={(e) => setFormEdicao({ ...formEdicao, valor: e.target.value })}
+                />
+              )}
             </div>
 
             <div>
@@ -1188,6 +1289,44 @@ export const KanbanBoard: React.FC = () => {
               onChange={(e) => setNomeNovoPipeline(e.target.value)}
               placeholder="Nome do pipeline"
             />
+            
+            <div className="flex items-center space-x-2">
+              <Checkbox 
+                id="novo-privado" 
+                checked={novoPipelinePrivado}
+                onCheckedChange={(c) => setNovoPipelinePrivado(!!c)}
+              />
+              <label
+                htmlFor="novo-privado"
+                className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
+              >
+                Pipeline Privado (só você vê)
+              </label>
+            </div>
+
+            <div className="flex items-center space-x-2">
+              <Checkbox 
+                id="novo-senha" 
+                checked={novoPipelineComSenha}
+                onCheckedChange={(c) => setNovoPipelineComSenha(!!c)}
+              />
+              <label
+                htmlFor="novo-senha"
+                className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
+              >
+                Proteger com senha
+              </label>
+            </div>
+
+            {novoPipelineComSenha && (
+              <Input
+                type="password"
+                value={novoPipelineSenha}
+                onChange={(e) => setNovoPipelineSenha(e.target.value)}
+                placeholder="Digite a senha do pipeline"
+              />
+            )}
+
             <DialogFooter>
               <Button
                 type="button"
@@ -1195,6 +1334,9 @@ export const KanbanBoard: React.FC = () => {
                 onClick={() => {
                   setModalNovoPipelineAberto(false);
                   setNomeNovoPipeline("");
+                  setNovoPipelinePrivado(false);
+                  setNovoPipelineComSenha(false);
+                  setNovoPipelineSenha("");
                 }}
                 disabled={salvandoPipeline}
               >
@@ -1206,6 +1348,46 @@ export const KanbanBoard: React.FC = () => {
                 disabled={salvandoPipeline}
               >
                 {salvandoPipeline ? "Salvando..." : "Salvar"}
+              </Button>
+            </DialogFooter>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={modalSenhaAberto} onOpenChange={setModalSenhaAberto}>
+        <DialogContent className="max-w-sm">
+          <DialogHeader>
+            <DialogTitle>Pipeline Protegido</DialogTitle>
+            <DialogDescription>
+              Este pipeline é protegido por senha. Informe a senha para acessar.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4">
+            <Input
+              type="password"
+              value={senhaVerificacao}
+              onChange={(e) => setSenhaVerificacao(e.target.value)}
+              placeholder="Senha do pipeline"
+            />
+            <DialogFooter>
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => {
+                  setModalSenhaAberto(false);
+                  setSenhaVerificacao("");
+                  setPipelineAlvoVerificacao("");
+                }}
+                disabled={verificandoSenha}
+              >
+                Cancelar
+              </Button>
+              <Button
+                type="button"
+                onClick={verificarSenha}
+                disabled={verificandoSenha}
+              >
+                {verificandoSenha ? "Verificando..." : "Acessar"}
               </Button>
             </DialogFooter>
           </div>

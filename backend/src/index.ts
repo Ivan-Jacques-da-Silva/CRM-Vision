@@ -1,5 +1,5 @@
 import { config as dotenvConfig } from 'dotenv';
-import { resolve } from 'path';
+import path from 'path';
 // Força restart do backend - v2
 import express from 'express';
 import cors from 'cors';
@@ -12,14 +12,15 @@ import oportunidadesRoutes from './routes/oportunidades';
 import trialRoutes from './routes/trial';
 import empresasRoutes from './routes/empresas';
 import rankingRoutes from './routes/ranking';
+import usuariosRoutes from './routes/usuarios';
 
 // Configurar dotenv para carregar .env de múltiplos locais
 [
-  resolve(process.cwd(), 'backend/.env'),
-  resolve(process.cwd(), '.env'),
-  resolve(__dirname, '../.env')
-].forEach(path => {
-  dotenvConfig({ path, override: false });
+  path.resolve(process.cwd(), 'backend/.env'),
+  path.resolve(process.cwd(), '.env'),
+  path.resolve(__dirname, '../.env')
+].forEach(envPath => {
+  dotenvConfig({ path: envPath, override: false });
 });
 
 const app = express();
@@ -52,6 +53,9 @@ app.use(cors({
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 
+// Servir arquivos estáticos (uploads)
+app.use('/uploads', express.static(path.join(process.cwd(), 'public/uploads')));
+
 // Log das requisições  
 app.use((req: express.Request, res: express.Response, next: express.NextFunction) => {
   console.log(`${new Date().toISOString()} - ${req.method} ${req.path}`);
@@ -66,6 +70,7 @@ app.use('/api/oportunidades', oportunidadesRoutes);
 app.use('/api/trial', trialRoutes);
 app.use('/api/ranking', rankingRoutes);
 app.use('/api/empresas', empresasRoutes);
+app.use('/api/usuarios', usuariosRoutes);
 
 // Rota de teste
 app.get('/api/health', (req: express.Request, res: express.Response) => {

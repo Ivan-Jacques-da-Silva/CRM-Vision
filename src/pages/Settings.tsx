@@ -7,10 +7,7 @@ import React, { useState } from 'react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { PersonalInfoForm } from '@/components/settings/PersonalInfoForm';
-import { ProfileSettingsForm } from '@/components/settings/ProfileSettingsForm';
 import { PasswordChangeForm } from '@/components/settings/PasswordChangeForm';
-import { NotificationPreferences } from '@/components/settings/NotificationPreferences';
-import { LanguageSettings } from '@/components/settings/LanguageSettings';
 
 /**
  * Componente principal da página de configurações
@@ -31,9 +28,7 @@ export function Settings() {
       <Tabs defaultValue="personal" value={activeTab} onValueChange={setActiveTab} className="space-y-4">
         <TabsList>
           <TabsTrigger value="personal">Dados Pessoais</TabsTrigger>
-          <TabsTrigger value="profiles">Perfis</TabsTrigger>
           <TabsTrigger value="security">Segurança</TabsTrigger>
-          <TabsTrigger value="preferences">Preferências</TabsTrigger>
         </TabsList>
 
         <TabsContent value="personal">
@@ -46,20 +41,6 @@ export function Settings() {
             </CardHeader>
             <CardContent className="space-y-6">
               <PersonalInfoForm />
-            </CardContent>
-          </Card>
-        </TabsContent>
-
-        <TabsContent value="profiles">
-          <Card>
-            <CardHeader>
-              <CardTitle>Gerenciar Perfis</CardTitle>
-              <CardDescription>
-                Configure os perfis disponíveis na sua conta.
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <ProfileSettingsForm />
             </CardContent>
           </Card>
         </TabsContent>
@@ -78,33 +59,6 @@ export function Settings() {
           </Card>
         </TabsContent>
 
-        <TabsContent value="preferences">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <Card>
-              <CardHeader>
-                <CardTitle>Notificações</CardTitle>
-                <CardDescription>
-                  Configure suas preferências de notificação.
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                <NotificationPreferences />
-              </CardContent>
-            </Card>
-            
-            <Card>
-              <CardHeader>
-                <CardTitle>Idioma</CardTitle>
-                <CardDescription>
-                  Defina o idioma padrão da interface.
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                <LanguageSettings />
-              </CardContent>
-            </Card>
-          </div>
-        </TabsContent>
       </Tabs>
     </div>
   );

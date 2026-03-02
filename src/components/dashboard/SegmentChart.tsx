@@ -4,6 +4,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend } from 'recharts';
 import { useTheme } from '@/contexts/ThemeContext';
 import { buscarOportunidades } from '@/services/api';
+import { useIsMobile } from '@/hooks/use-mobile';
 
 interface WeeklyPoint {
   week: string;
@@ -12,6 +13,7 @@ interface WeeklyPoint {
 
 export function SegmentChart() {
   const { theme } = useTheme();
+  const isMobile = useIsMobile();
 
   const [data, setData] = useState<WeeklyPoint[]>([]);
   const [segments, setSegments] = useState<string[]>([]);
@@ -120,6 +122,7 @@ export function SegmentChart() {
   }, []);
 
   const cores = ['#3b82f6', '#22c55e', '#f97316', '#a855f7', '#ef4444', '#14b8a6'];
+  const segmentosExibidos = isMobile ? segments.slice(0, 3) : segments;
 
   return (
     <Card className="col-span-2">
@@ -130,7 +133,7 @@ export function SegmentChart() {
         </CardDescription>
       </CardHeader>
       <CardContent>
-        <div className="h-72">
+        <div className="h-64 sm:h-72">
           {loading ? (
             <div className="flex h-full items-center justify-center text-sm text-muted-foreground">
               Carregando série semanal por segmento...
@@ -143,7 +146,7 @@ export function SegmentChart() {
             <ResponsiveContainer width="100%" height="100%">
               <LineChart
                 data={data}
-                margin={{ top: 5, right: 20, left: 10, bottom: 20 }}
+                margin={isMobile ? { top: 5, right: 8, left: -18, bottom: 8 } : { top: 5, right: 20, left: 10, bottom: 20 }}
               >
                 <CartesianGrid
                   strokeDasharray="3 3"
@@ -151,11 +154,13 @@ export function SegmentChart() {
                 />
                 <XAxis
                   dataKey="week"
-                  tick={{ fill: theme === 'dark' ? '#ccc' : '#333' }}
+                  tick={{ fill: theme === 'dark' ? '#ccc' : '#333', fontSize: isMobile ? 11 : 12 }}
                   tickLine={{ stroke: theme === 'dark' ? '#666' : '#ccc' }}
                   axisLine={{ stroke: theme === 'dark' ? '#666' : '#ccc' }}
+                  interval={0}
                 />
                 <YAxis
+                  hide={isMobile}
                   allowDecimals={false}
                   tick={{ fill: theme === 'dark' ? '#ccc' : '#333' }}
                   tickLine={{ stroke: theme === 'dark' ? '#666' : '#ccc' }}
@@ -167,10 +172,11 @@ export function SegmentChart() {
                     backgroundColor: theme === 'dark' ? '#333' : '#fff',
                     borderColor: theme === 'dark' ? '#555' : '#ddd',
                     color: theme === 'dark' ? '#fff' : '#000',
+                    fontSize: isMobile ? 12 : 13,
                   }}
                 />
-                <Legend />
-                {segments.map((segmento, index) => (
+                {!isMobile && <Legend />}
+                {segmentosExibidos.map((segmento, index) => (
                   <Line
                     key={segmento}
                     type="monotone"
@@ -178,8 +184,8 @@ export function SegmentChart() {
                     name={segmento}
                     stroke={cores[index % cores.length]}
                     strokeWidth={2}
-                    dot={{ r: 2 }}
-                    activeDot={{ r: 4 }}
+                    dot={{ r: isMobile ? 1 : 2 }}
+                    activeDot={{ r: isMobile ? 3 : 4 }}
                   />
                 ))}
               </LineChart>

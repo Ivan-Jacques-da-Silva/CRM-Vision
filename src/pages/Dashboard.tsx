@@ -200,11 +200,14 @@ export function Dashboard() {
       
       <div className="grid grid-cols-1 gap-6">
         <div className="h-72 overflow-hidden rounded-xl border border-border/60 bg-muted/20">
-          <img
-            src="/dashboard-pit-vendas.svg"
-            alt="Ilustracao horizontal de pit de vendas no painel"
-            className="h-full w-full object-cover"
-          />
+          <picture className="block h-full w-full">
+            <source media="(max-width: 767px)" srcSet="/dashboard-pit-vendasMobile.png" />
+            <img
+              src="/dashboard-pit-vendas.svg"
+              alt="Ilustracao horizontal de pit de vendas no painel"
+              className="h-full w-full object-cover"
+            />
+          </picture>
         </div>
       </div>
       

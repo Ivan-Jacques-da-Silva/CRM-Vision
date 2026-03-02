@@ -15,6 +15,21 @@ if (import.meta.env.DEV) {
 }
 
 /**
+ * Retorna a URL completa do avatar do usuário
+ */
+export function getAvatarUrl(avatarPath: string | undefined | null): string | undefined {
+  if (!avatarPath) return undefined;
+  if (avatarPath.startsWith('http')) return avatarPath;
+  
+  // Remove /api do final da URL base se existir
+  const baseUrl = API_BASE_URL.endsWith('/api') 
+    ? API_BASE_URL.slice(0, -4) 
+    : API_BASE_URL;
+    
+  return `${baseUrl}${avatarPath}`;
+}
+
+/**
  * Classe para lidar com erros da API
  */
 class ApiError extends Error {
@@ -51,9 +66,6 @@ async function apiRequest(endpoint: string, options: RequestInit = {}) {
         errorData.message ||
         errorData.erro ||
         `HTTP ${response.status}: ${response.statusText}`;
-      if (response.status === 401 && !endpoint.startsWith('/auth/login')) {
-        window.location.href = '/login';
-      }
       throw new ApiError(message, response.status);
     }
 
@@ -83,6 +95,10 @@ export interface RegisterData {
   email: string;
   senha: string;
   empresaNome?: string;
+  telefone?: string;
+  tipoPessoa?: string;
+  cpf?: string;
+  cnpj?: string;
 }
 
 export async function login(credentials: LoginCredentials) {
@@ -235,6 +251,9 @@ export interface PipelineKanban {
   ordemEtapas?: any;
   createdAt?: string;
   updatedAt?: string;
+  temSenha?: boolean;
+  privado?: boolean;
+  usuarioId?: string;
 }
 
 export async function buscarOportunidades(params: any = {}) {
@@ -298,10 +317,17 @@ export async function salvarPipelineAtivoKanban(pipelineAtivo: string) {
   });
 }
 
-export async function criarPipelineKanban(data: { nome: string }) {
+export async function criarPipelineKanban(data: { nome: string; senha?: string; privado?: boolean }) {
   return await apiRequest('/oportunidades/pipelines', {
     method: 'POST',
     body: JSON.stringify(data),
+  });
+}
+
+export async function verificarSenhaPipeline(slug: string, senha: string) {
+  return await apiRequest(`/oportunidades/pipelines/${slug}/verificar-senha`, {
+    method: 'POST',
+    body: JSON.stringify({ senha }),
   });
 }
 
@@ -478,10 +504,32 @@ export async function atualizarDadosPessoais(dados: any) {
       body: JSON.stringify(dados),
     });
   } catch (error) {
-    console.log('Endpoint não implementado ainda');
-    return { success: true };
+    console.error('Erro ao atualizar dados pessoais:', error);
+    throw error;
   }
 }
 
-// Exportar ApiError para uso em componentes
-export { ApiError };
+export async function uploadAvatar(file: File) {
+  const formData = new FormData();
+  formData.append('avatar', file);
+
+  const url = `${API_BASE_URL}/usuarios/avatar`;
+  
+  // Custom fetch because apiRequest sets Content-Type to application/json by default
+  // and we need browser to set multipart/form-data boundary
+  const response = await fetch(url, {
+    method: 'POST',
+    body: formData,
+    headers: {
+       // Do not set Content-Type, let browser set it
+       // But we need to include credentials if needed
+    },
+    credentials: 'include' // Important for cookies
+  });
+
+  if (!response.ok) {
+     throw new Error('Erro ao fazer upload da imagem');
+  }
+
+  return await response.json();
+}

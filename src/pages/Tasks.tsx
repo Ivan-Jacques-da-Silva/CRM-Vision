@@ -3,10 +3,11 @@ import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Plus, Calendar, User, Filter, CheckCircle, Clock, AlertCircle, XCircle } from 'lucide-react';
+import { Plus, Calendar, User, CheckCircle, Clock, AlertCircle, XCircle } from 'lucide-react';
 import { buscarTarefas, atualizarTarefa, excluirTarefa } from '@/services/api';
 import { useToast } from '@/hooks/use-toast';
 import { NewTaskDialog } from '@/components/tasks/NewTaskDialog';
+import { addDays, endOfDay, isBefore, startOfDay } from 'date-fns';
 
 interface Tarefa {
   id: string;
@@ -29,12 +30,24 @@ interface Tarefa {
   updatedAt: string;
 }
 
+type TaskViewFilter = 'HOJE' | 'ATRASADAS' | 'PROXIMOS_7_DIAS' | 'ATIVAS';
+
 const Tasks = () => {
   const [tarefas, setTarefas] = useState<Tarefa[]>([]);
-  const [filtro, setFiltro] = useState<string>('TODAS');
+  const [filtro, setFiltro] = useState<TaskViewFilter>('HOJE');
   const [dialogAberto, setDialogAberto] = useState(false);
   const [loading, setLoading] = useState(true);
   const { toast } = useToast();
+
+  const inicioHoje = startOfDay(new Date());
+  const fimHoje = endOfDay(inicioHoje);
+  const fimProximos7 = endOfDay(addDays(inicioHoje, 7));
+  const filtroOpcoes: { key: TaskViewFilter; label: string }[] = [
+    { key: 'HOJE', label: 'Hoje' },
+    { key: 'ATRASADAS', label: 'Atrasadas' },
+    { key: 'PROXIMOS_7_DIAS', label: 'Próx. 7 dias' },
+    { key: 'ATIVAS', label: 'Todas ativas' },
+  ];
 
   useEffect(() => {
     carregarTarefas();
@@ -98,9 +111,25 @@ const Tasks = () => {
     }
   };
 
-  const tarefasFiltradas = tarefas.filter(tarefa => {
-    if (filtro === 'TODAS') return true;
-    return tarefa.status === filtro;
+  const tarefasFiltradas = tarefas.filter((tarefa) => {
+    const dataVencimento = new Date(tarefa.dataVencimento);
+    const isAtiva = tarefa.status === 'PENDENTE' || tarefa.status === 'EM_ANDAMENTO';
+
+    if (Number.isNaN(dataVencimento.getTime()) || !isAtiva) {
+      return false;
+    }
+
+    switch (filtro) {
+      case 'HOJE':
+        return dataVencimento >= inicioHoje && dataVencimento <= fimHoje;
+      case 'ATRASADAS':
+        return isBefore(dataVencimento, inicioHoje);
+      case 'PROXIMOS_7_DIAS':
+        return dataVencimento > fimHoje && dataVencimento <= fimProximos7;
+      case 'ATIVAS':
+      default:
+        return true;
+    }
   });
 
   const getStatusIcon = (status: string) => {
@@ -151,23 +180,24 @@ const Tasks = () => {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <h1 className="text-3xl font-bold">Tarefas</h1>
-        <Button onClick={() => setDialogAberto(true)}>
+        <Button onClick={() => setDialogAberto(true)} className="w-full sm:w-auto">
           <Plus className="w-4 h-4 mr-2" />
           Nova Tarefa
         </Button>
       </div>
 
-      <div className="flex gap-2">
-        {['TODAS', 'PENDENTE', 'EM_ANDAMENTO', 'CONCLUIDA', 'CANCELADA'].map((status) => (
+      <div className="grid grid-cols-2 gap-2 sm:flex sm:flex-wrap">
+        {filtroOpcoes.map((opcao) => (
           <Button
-            key={status}
-            variant={filtro === status ? 'default' : 'outline'}
-            onClick={() => setFiltro(status)}
+            key={opcao.key}
+            variant={filtro === opcao.key ? 'default' : 'outline'}
+            onClick={() => setFiltro(opcao.key)}
             size="sm"
+            className="w-full sm:w-auto"
           >
-            {status === 'TODAS' ? 'Todas' : status.replace('_', ' ')}
+            {opcao.label}
           </Button>
         ))}
       </div>
@@ -222,12 +252,13 @@ const Tasks = () => {
                 )}
               </div>
               
-              <div className="flex gap-2 mt-4">
+              <div className="mt-4 flex flex-col gap-2 sm:flex-row">
                 {tarefa.status !== 'CONCLUIDA' && (
                   <Button
                     size="sm"
                     variant="outline"
                     onClick={() => atualizarStatusTarefa(tarefa.id, 'CONCLUIDA')}
+                    className="w-full sm:w-auto"
                   >
                     Concluir
                   </Button>
@@ -236,6 +267,7 @@ const Tasks = () => {
                   size="sm"
                   variant="destructive"
                   onClick={() => excluirTarefaHandler(tarefa.id)}
+                  className="w-full sm:w-auto"
                 >
                   Excluir
                 </Button>
@@ -244,6 +276,16 @@ const Tasks = () => {
           </Card>
         ))}
       </div>
+
+      {!loading && tarefasFiltradas.length === 0 && (
+        <Card>
+          <CardContent className="py-10 text-center">
+            <p className="text-sm text-muted-foreground">
+              Nenhuma tarefa encontrada para este filtro.
+            </p>
+          </CardContent>
+        </Card>
+      )}
 
       <NewTaskDialog
         open={dialogAberto}

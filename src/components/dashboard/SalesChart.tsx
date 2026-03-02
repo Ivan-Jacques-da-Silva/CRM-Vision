@@ -4,6 +4,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 import { useTheme } from '@/contexts/ThemeContext';
 import { buscarOportunidades } from '@/services/api';
+import { useIsMobile } from '@/hooks/use-mobile';
 
 interface SalesPoint {
   month: string;
@@ -12,6 +13,7 @@ interface SalesPoint {
 
 export function SalesChart() {
   const { theme } = useTheme();
+  const isMobile = useIsMobile();
 
   const [data, setData] = useState<SalesPoint[]>([]);
   const [loading, setLoading] = useState(true);
@@ -105,7 +107,7 @@ export function SalesChart() {
         </CardDescription>
       </CardHeader>
       <CardContent>
-        <div className="h-80">
+        <div className="h-64 sm:h-72 md:h-80">
           {loading ? (
             <div className="flex h-full items-center justify-center text-sm text-muted-foreground">
               Carregando dados de vendas...
@@ -116,15 +118,20 @@ export function SalesChart() {
             </div>
           ) : (
             <ResponsiveContainer width="100%" height="100%">
-              <BarChart data={data} margin={{ top: 5, right: 30, left: 20, bottom: 25 }}>
+              <BarChart
+                data={data}
+                margin={isMobile ? { top: 5, right: 8, left: -20, bottom: 8 } : { top: 5, right: 30, left: 20, bottom: 25 }}
+              >
                 <CartesianGrid strokeDasharray="3 3" stroke={theme === 'dark' ? '#333' : '#eee'} />
                 <XAxis 
                   dataKey="month" 
-                  tick={{ fill: theme === 'dark' ? '#ccc' : '#333' }}
+                  tick={{ fill: theme === 'dark' ? '#ccc' : '#333', fontSize: isMobile ? 11 : 12 }}
                   tickLine={{ stroke: theme === 'dark' ? '#666' : '#ccc' }}
                   axisLine={{ stroke: theme === 'dark' ? '#666' : '#ccc' }}
+                  interval={0}
                 />
                 <YAxis 
+                  hide={isMobile}
                   tickFormatter={(value) => `R$ ${value / 1000}k`}
                   tick={{ fill: theme === 'dark' ? '#ccc' : '#333' }}
                   tickLine={{ stroke: theme === 'dark' ? '#666' : '#ccc' }}
@@ -136,7 +143,8 @@ export function SalesChart() {
                   contentStyle={{ 
                     backgroundColor: theme === 'dark' ? '#333' : '#fff',
                     borderColor: theme === 'dark' ? '#555' : '#ddd',
-                    color: theme === 'dark' ? '#fff' : '#000'
+                    color: theme === 'dark' ? '#fff' : '#000',
+                    fontSize: isMobile ? 12 : 13,
                   }}
                 />
                 <Bar 
@@ -144,6 +152,7 @@ export function SalesChart() {
                   name="Vendas" 
                   fill="hsl(var(--primary))" 
                   radius={[4, 4, 0, 0]}
+                  maxBarSize={isMobile ? 28 : undefined}
                 />
               </BarChart>
             </ResponsiveContainer>

@@ -139,7 +139,7 @@ export function RecentActivities() {
                   </div>
                   <div className="flex text-xs text-muted-foreground items-center space-x-2">
                     <span>
-                      {format(activity.date, "dd 'de' MMMM, yyyy", { locale: ptBR })}
+                      {format(activity.date, "dd 'de' MMMM, yyyy 'às' HH:mm", { locale: ptBR })}
                     </span>
                     <span>•</span>
                     <span>{activity.createdBy}</span>

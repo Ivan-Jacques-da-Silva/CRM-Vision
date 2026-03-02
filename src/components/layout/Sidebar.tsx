@@ -1,10 +1,9 @@
-
 /**
  * Componente da barra lateral de navegação
  * Fornece navegação principal do aplicativo VisionCRM com suporte para exibição em dispositivos móveis
  */
-import React, { useEffect, useState } from 'react';
-import { NavLink } from 'react-router-dom';
+import React from 'react';
+import { NavLink, useNavigate } from 'react-router-dom';
 import {
   LayoutDashboard,
   Users,
@@ -17,10 +16,13 @@ import {
   Webhook,
   MessageCircle,
   Trophy,
-  LogOut
+  LogOut,
+  Home,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import { buscarDadosUsuario } from '@/services/api';
+import { buscarDadosUsuario, buscarEmpresaAtual, logout, getAvatarUrl } from '@/services/api';
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { useQuery } from '@tanstack/react-query';
 
 interface SidebarProps {
   isOpen: boolean;
@@ -28,40 +30,56 @@ interface SidebarProps {
 }
 
 export const Sidebar: React.FC<SidebarProps> = ({ isOpen, onItemClick }) => {
-  const [userName, setUserName] = useState<string>('Usuário');
+  const navigate = useNavigate();
 
-  useEffect(() => {
-    let isMounted = true;
+  const { data: dadosUsuario } = useQuery({
+    queryKey: ['dados-usuario'],
+    queryFn: buscarDadosUsuario,
+    staleTime: 1000 * 60 * 5, // 5 minutes
+  });
 
-    const carregarUsuario = async () => {
-      try {
-        const response = await buscarDadosUsuario();
-        const nome =
-          response?.usuario?.nome ||
-          response?.nome ||
-          response?.user?.nome ||
-          'Usuário';
+  const { data: dadosEmpresa } = useQuery({
+    queryKey: ['dados-empresa'],
+    queryFn: buscarEmpresaAtual,
+    staleTime: 1000 * 60 * 5, // 5 minutes
+  });
 
-        if (isMounted && typeof nome === 'string' && nome.trim().length > 0) {
-          setUserName(nome);
-        }
-      } catch (error) {
-        console.error('Erro ao carregar dados do usuário:', error);
-      }
-    };
+  const userName =
+    dadosUsuario?.usuario?.nome ||
+    dadosUsuario?.nome ||
+    dadosUsuario?.user?.nome ||
+    'Usuário';
 
-    carregarUsuario();
+  const userAvatarPath = 
+    dadosUsuario?.usuario?.avatar || 
+    dadosUsuario?.avatar || 
+    dadosUsuario?.user?.avatar;
 
-    return () => {
-      isMounted = false;
-    };
-  }, []);
+  const userAvatar = getAvatarUrl(userAvatarPath);
+
+  const companyName =
+    dadosEmpresa?.empresa?.nome ||
+    dadosEmpresa?.nome ||
+    dadosUsuario?.usuario?.empresa?.nome ||
+    dadosUsuario?.empresa?.nome ||
+    dadosUsuario?.empresaNome ||
+    'Empresa não informada';
 
   const inicial =
     userName && userName.trim().length > 0
       ? userName.trim().charAt(0).toUpperCase()
       : 'U';
 
+  const handleLogout = async () => {
+    try {
+      await logout();
+      navigate('/login');
+    } catch (error) {
+      console.error('Erro ao fazer logout', error);
+      navigate('/login');
+    }
+  };
+  
   const itensMenu = [
     { nome: 'Dashboard', caminho: '/dashboard', Icone: LayoutDashboard },
     { nome: 'Clientes', caminho: '/clients', Icone: Users },
@@ -72,8 +90,8 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen, onItemClick }) => {
     { nome: 'Relatórios', caminho: '/reports', Icone: LineChart },
     { nome: 'Ranking', caminho: '/ranking', Icone: Trophy },
     { nome: 'Integrações', caminho: '/integrations', Icone: Webhook },
-    { nome: 'Assinatura', caminho: '/subscription', Icone: CreditCard },
     { nome: 'Configurações', caminho: '/settings', Icone: Settings },
+    { nome: 'Assinatura', caminho: '/subscription', Icone: CreditCard },
   ];
 
   return (
@@ -83,29 +101,29 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen, onItemClick }) => {
         isOpen ? 'w-64' : 'w-16 md:w-16 -translate-x-full md:translate-x-0'
       )}
     >
-      <nav className="flex flex-col p-2 h-full">
-        <ul className="space-y-2 flex-1">
-          {itensMenu.map((item, index) => (
-            <li 
-              key={item.nome} 
-              style={{ animationDelay: `${index * 0.1}s` }} 
-              className="slide-up"
-            >
+      <nav className="h-full flex flex-col bg-sidebar border-r border-sidebar-border shadow-xl backdrop-blur-xl">
+        <ul className="flex-1 px-3 py-4 space-y-1 overflow-y-auto custom-scrollbar">
+          {itensMenu.map((item) => (
+            <li key={item.caminho}>
               <NavLink
                 to={item.caminho}
                 onClick={onItemClick}
-                className={({ isActive }) => cn(
-                  'sidebar-nav-item flex items-center px-3 py-3 rounded-lg transition-all duration-200 group relative overflow-hidden',
-                  isActive 
-                    ? 'sidebar-nav-item-active'
-                    : '',
-                  !isOpen && 'justify-center md:justify-center'
-                )}
+                className={({ isActive }) =>
+                  cn(
+                    'flex items-center px-3 py-2.5 rounded-lg transition-all duration-300 group relative overflow-hidden',
+                    isActive
+                      ? 'bg-primary text-primary-foreground shadow-md shadow-primary/25'
+                      : 'text-sidebar-foreground hover:bg-sidebar-accent/50 hover:text-sidebar-accent-foreground',
+                    !isOpen && 'justify-center px-2'
+                  )
+                }
               >
-                <item.Icone className={cn(
-                  'h-5 w-5 transition-colors duration-300', 
-                  !isOpen && 'md:mx-auto'
-                )} />
+                <item.Icone
+                  className={cn(
+                    'h-5 w-5 transition-transform duration-300 group-hover:scale-110',
+                    !isOpen && 'mx-auto'
+                  )}
+                />
                 {isOpen && (
                   <span className="ml-3 truncate relative z-10 font-medium">
                     {item.nome}
@@ -115,37 +133,65 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen, onItemClick }) => {
             </li>
           ))}
         </ul>
-        
+
         <div className="mt-auto border-t border-[hsl(var(--sidebar-border)/0.7)] pt-4 flex flex-col gap-2">
-          <div className="flex items-center px-3 py-3 text-sm text-sidebar-foreground rounded-lg bg-[hsl(var(--sidebar-accent)/0.35)] border border-[hsl(var(--sidebar-border)/0.7)]">
+          <div
+            className={cn(
+              'flex items-center px-3 py-3 text-sm text-sidebar-foreground rounded-lg bg-[hsl(var(--sidebar-accent)/0.35)] border border-[hsl(var(--sidebar-border)/0.7)]',
+              !isOpen && 'justify-center px-2'
+            )}
+          >
             {isOpen ? (
               <>
-                <div className="w-10 h-10 bg-gradient-to-br from-primary to-accent rounded-full flex items-center justify-center text-white font-bold text-lg">
-                  {inicial}
-                </div>
-                <div className="ml-3">
+                <Avatar className="h-10 w-10 shrink-0 border border-border">
+                  <AvatarImage src={userAvatar} alt={userName} />
+                  <AvatarFallback className="bg-gradient-to-br from-primary to-accent text-white font-bold">
+                    {inicial}
+                  </AvatarFallback>
+                </Avatar>
+                <div className="ml-3 min-w-0">
                   <p className="font-semibold truncate">{userName}</p>
+                  <p className="text-xs text-sidebar-foreground/70 truncate">{companyName}</p>
                 </div>
               </>
             ) : (
-              <div className="w-10 h-10 bg-gradient-to-br from-primary to-accent rounded-full flex items-center justify-center text-white mx-auto font-bold text-lg">
-                {inicial}
-              </div>
+              <Avatar className="h-10 w-10 shrink-0 border border-border">
+                <AvatarImage src={userAvatar} alt={userName} />
+                <AvatarFallback className="bg-gradient-to-br from-primary to-accent text-white font-bold">
+                  {inicial}
+                </AvatarFallback>
+              </Avatar>
             )}
           </div>
-          
-          {/* Botão de Logout */}
-          <NavLink
-            to="/"
-            onClick={onItemClick}
-            className={cn(
-              'flex items-center px-3 py-3 rounded-lg transition-colors duration-300 text-destructive hover:bg-destructive/12 bg-[hsl(var(--sidebar-accent)/0.35)] border border-[hsl(var(--sidebar-border)/0.7)]',
-              !isOpen && 'justify-center'
-            )}
-          >
-            <LogOut className={cn('h-5 w-5', !isOpen && 'mx-auto')} />
-            {isOpen && <span className="ml-3 font-medium">Sair</span>}
-          </NavLink>
+
+          <div className="flex flex-col md:flex-row gap-2">
+            <NavLink
+              to="/"
+              onClick={onItemClick}
+              className={cn(
+                'flex flex-1 items-center px-3 py-3 rounded-lg transition-colors duration-300 text-sidebar-foreground hover:bg-accent/20 bg-[hsl(var(--sidebar-accent)/0.35)] border border-[hsl(var(--sidebar-border)/0.7)]',
+                !isOpen && 'justify-center px-2'
+              )}
+            >
+              <Home className={cn('h-5 w-5', !isOpen && 'mx-auto')} />
+              {isOpen && <span className="ml-3 font-medium">Voltar ao site</span>}
+            </NavLink>
+
+            <NavLink
+              to="#"
+              onClick={(e) => {
+                e.preventDefault();
+                handleLogout();
+              }}
+              className={cn(
+                'flex flex-1 items-center px-3 py-3 rounded-lg transition-colors duration-300 text-destructive hover:bg-destructive/12 bg-[hsl(var(--sidebar-accent)/0.35)] border border-[hsl(var(--sidebar-border)/0.7)]',
+                !isOpen && 'justify-center px-2'
+              )}
+            >
+              <LogOut className={cn('h-5 w-5', !isOpen && 'mx-auto')} />
+              {isOpen && <span className="ml-3 font-medium">Sair</span>}
+            </NavLink>
+          </div>
         </div>
       </nav>
     </aside>

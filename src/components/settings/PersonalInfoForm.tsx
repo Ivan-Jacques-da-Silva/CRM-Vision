@@ -1,27 +1,33 @@
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Button } from '@/components/ui/button';
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { useToast } from '@/hooks/use-toast';
-import { buscarDadosUsuario, atualizarDadosPessoais } from '@/services/api';
+import { buscarDadosUsuario, atualizarDadosPessoais, uploadAvatar, getAvatarUrl } from '@/services/api';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { Camera, Loader2 } from 'lucide-react';
 
 interface DadosPessoais {
   nome: string;
   email: string;
   telefone: string;
+  avatar?: string;
 }
 
 export const PersonalInfoForm: React.FC = () => {
   const { toast } = useToast();
   const queryClient = useQueryClient();
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const [uploading, setUploading] = useState(false);
   
   const [dados, setDados] = useState<DadosPessoais>({
     nome: '',
     email: '',
-    telefone: ''
+    telefone: '',
+    avatar: ''
   });
 
   const { data: dadosUsuario } = useQuery({
@@ -49,10 +55,14 @@ export const PersonalInfoForm: React.FC = () => {
 
   useEffect(() => {
     if (dadosUsuario) {
+      // Check if dadosUsuario has nested structure or flat structure
+      const user = dadosUsuario.usuario || dadosUsuario;
+      
       setDados({
-        nome: dadosUsuario.nome,
-        email: dadosUsuario.email,
-        telefone: dadosUsuario.telefone
+        nome: user.nome || '',
+        email: user.email || '',
+        telefone: user.telefone || '',
+        avatar: user.avatar || ''
       });
     }
   }, [dadosUsuario]);
@@ -62,6 +72,42 @@ export const PersonalInfoForm: React.FC = () => {
       ...prev,
       [campo]: valor
     }));
+  };
+
+  const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    setUploading(true);
+    try {
+      const response = await uploadAvatar(file);
+      setDados(prev => ({ ...prev, avatar: response.avatar }));
+      
+      // Force update user data cache
+      queryClient.invalidateQueries({ queryKey: ['dados-usuario'] });
+      
+      toast({
+        title: "Avatar atualizado",
+        description: "Sua foto de perfil foi atualizada com sucesso."
+      });
+    } catch (error) {
+      console.error(error);
+      toast({
+        title: "Erro",
+        description: "Não foi possível atualizar a foto de perfil.",
+        variant: "destructive"
+      });
+    } finally {
+      setUploading(false);
+      // Reset input
+      if (fileInputRef.current) {
+        fileInputRef.current.value = '';
+      }
+    }
+  };
+
+  const handleAvatarClick = () => {
+    fileInputRef.current?.click();
   };
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -75,7 +121,34 @@ export const PersonalInfoForm: React.FC = () => {
         <CardTitle>Informações Pessoais</CardTitle>
       </CardHeader>
       <CardContent>
-        <form onSubmit={handleSubmit} className="space-y-4">
+        <form onSubmit={handleSubmit} className="space-y-6">
+          <div className="flex flex-col items-center justify-center mb-6">
+            <div className="relative group cursor-pointer" onClick={handleAvatarClick}>
+              <Avatar className="h-24 w-24 border-2 border-primary/20">
+                <AvatarImage src={getAvatarUrl(dados.avatar)} alt={dados.nome} />
+                <AvatarFallback className="text-2xl bg-primary/10 text-primary">
+                  {dados.nome ? dados.nome.charAt(0).toUpperCase() : 'U'}
+                </AvatarFallback>
+              </Avatar>
+              <div className="absolute inset-0 bg-black/40 rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
+                <Camera className="h-8 w-8 text-white" />
+              </div>
+              {uploading && (
+                <div className="absolute inset-0 bg-background/80 rounded-full flex items-center justify-center">
+                  <Loader2 className="h-8 w-8 animate-spin text-primary" />
+                </div>
+              )}
+            </div>
+            <p className="text-sm text-muted-foreground mt-2">Clique para alterar a foto</p>
+            <input 
+              type="file" 
+              ref={fileInputRef} 
+              className="hidden" 
+              accept="image/*"
+              onChange={handleFileChange}
+            />
+          </div>
+
           <div className="space-y-2">
             <Label htmlFor="nome">Nome Completo</Label>
             <Input

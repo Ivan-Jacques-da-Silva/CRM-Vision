@@ -14,6 +14,8 @@ model Usuario {
   id        String   @id @default(cuid())
   nome      String
   email     String   @unique
+  telefone  String?
+  avatar    String?
   senha     String
   empresaId String?
   kanbanPipelineAtivo String @default("principal")
@@ -29,6 +31,7 @@ model Usuario {
   tarefas   Tarefa[]
   oportunidades Oportunidade[]
   atividadesOportunidades AtividadeOportunidade[]
+  pipelinesCriados PipelineKanban[]
 
   @@map("usuarios")
 }
@@ -52,12 +55,16 @@ model PipelineKanban {
   empresaId           String
   slug                String
   nome                String
+  senha               String?
+  privado             Boolean  @default(false)
+  usuarioId           String?
   etapasPersonalizadas Json?
   ordemEtapas         Json?
   createdAt           DateTime @default(now())
   updatedAt           DateTime @updatedAt
 
   empresa             Empresa @relation(fields: [empresaId], references: [id])
+  usuario             Usuario? @relation(fields: [usuarioId], references: [id])
 
   @@unique([empresaId, slug])
   @@map("pipelines_kanban")

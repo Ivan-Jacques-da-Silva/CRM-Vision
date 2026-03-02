@@ -121,13 +121,13 @@ export function Reports() {
 
   return (
     <div
-      className="space-y-6 print:bg-white print:text-black print:p-8"
+      className="space-y-5 print:bg-white print:text-black print:p-8 md:space-y-6"
       id="relatorio-conteudo"
     >
-      <div className="flex items-start justify-between gap-4">
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between md:gap-4">
         <div>
-          <h1 className="text-3xl font-bold tracking-tight">Relatórios</h1>
-          <p className="text-muted-foreground">
+          <h1 className="text-2xl font-bold tracking-tight md:text-3xl">Relatórios</h1>
+          <p className="text-sm text-muted-foreground md:text-base">
             Visão completa de vendas, oportunidades, clientes e tarefas com dados reais.
           </p>
         </div>
@@ -158,7 +158,7 @@ export function Reports() {
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">
+            <div className="text-xl font-bold leading-tight sm:text-2xl">
               {loading ? '...' : formatCurrency(stats.totalVendasGanhos)}
             </div>
             <p className="text-xs text-muted-foreground">
@@ -173,7 +173,7 @@ export function Reports() {
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">
+            <div className="text-xl font-bold leading-tight sm:text-2xl">
               {loading ? '...' : formatCurrency(stats.ganhosMes)}
             </div>
             <p className="text-xs text-muted-foreground">
@@ -188,7 +188,7 @@ export function Reports() {
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">
+            <div className="text-xl font-bold leading-tight sm:text-2xl">
               {loading ? '...' : `${stats.taxaConversao}%`}
             </div>
             <p className="text-xs text-muted-foreground">
@@ -203,7 +203,7 @@ export function Reports() {
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">
+            <div className="text-xl font-bold leading-tight sm:text-2xl">
               {loading ? '...' : stats.totalOportunidades}
             </div>
             <p className="text-xs text-muted-foreground">
@@ -221,7 +221,7 @@ export function Reports() {
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">
+            <div className="text-xl font-bold leading-tight sm:text-2xl">
               {loading ? '...' : stats.totalClientes}
             </div>
             <p className="text-xs text-muted-foreground">
@@ -236,7 +236,7 @@ export function Reports() {
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">
+            <div className="text-xl font-bold leading-tight sm:text-2xl">
               {loading ? '...' : stats.totalTarefas}
             </div>
             <p className="text-xs text-muted-foreground">
@@ -253,3 +253,4 @@ export function Reports() {
     </div>
   );
 }
+
